@@ -24,10 +24,8 @@
     },
     "publish": [
       {
-        "provider": "github",
-        "owner": "devecchianderson12-web",
-        "repo": "Pulso",
-        "releaseType": "release"
+        "url": "https://raw.githubusercontent.com/devecchianderson12-web/Pulso/main/updates/",
+        "provider": "generic"
       }
     ],
     "files": [

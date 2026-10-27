@@ -66,7 +66,8 @@ node scripts/make-icons.js
 
 El script sube la versión, compila en una carpeta de ruta corta (NSIS falla con rutas de más de
 260 caracteres) y sube el código a `main` con la etiqueta `v1.3.0`. Después crea el release en
-GitHub con el instalador, `latest.yml`, el `.blockmap` y la versión portable. Las copias
+GitHub con solo el instalador y la versión portable, y al final publica `updates/latest.yml` en
+el repositorio, que es lo que leen las copias instaladas para actualizarse. Las copias
 instaladas lo detectan solas (al arrancar y cada 4 horas) y se actualizan al pulsar **Actualizar**.
 
 Licencia: GPL-3.0-or-later.
