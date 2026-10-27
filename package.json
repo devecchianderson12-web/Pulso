@@ -1,11 +1,11 @@
 {
-  "name": "whatsdesk-windows",
-  "productName": "Whatsdesk",
+  "name": "pulso",
+  "productName": "Pulso",
   "version": "1.1.0",
-  "description": "Cliente de escritorio no oficial para WhatsApp Web en Windows",
+  "description": "Pulso: tu WhatsApp, en tu estilo. Cliente de escritorio no oficial para Windows",
   "main": "src/main.js",
   "license": "GPL-3.0-or-later",
-  "author": "Whatsdesk",
+  "author": "Pulso",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis portable --publish never",
@@ -17,8 +17,8 @@
     "electron-builder": "25.1.8"
   },
   "build": {
-    "appId": "com.whatsdesk.windows",
-    "productName": "Whatsdesk",
+    "appId": "com.pulso.windows",
+    "productName": "Pulso",
     "directories": {
       "output": "dist"
     },
@@ -43,15 +43,16 @@
       ]
     },
     "nsis": {
-      "artifactName": "Whatsdesk-Setup-${version}.${ext}",
+      "artifactName": "Pulso-Setup-${version}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Whatsdesk"
+      "shortcutName": "Pulso",
+      "guid": "a2af60dd-1c7c-5626-8f90-c920723e6566"
     },
     "portable": {
-      "artifactName": "Whatsdesk-Portable-${version}.exe"
+      "artifactName": "Pulso-Portable-${version}.exe"
     }
   },
   "dependencies": {

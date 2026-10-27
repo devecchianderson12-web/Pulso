@@ -118,7 +118,7 @@ ipcMain.on('update:closed', () => {
 
 function check(isManual) {
   manual = isManual;
-  if (!app.isPackaged && !process.env.WHATSDESK_DEV_UPDATES) {
+  if (!app.isPackaged && !process.env.PULSO_DEV_UPDATES) {
     if (isManual) {
       send({ kind: 'error', message: 'Las actualizaciones solo funcionan en la versión instalada.' });
       openPopup();
@@ -135,7 +135,7 @@ function check(isManual) {
 function init(win, onBeforeInstall) {
   parent = win;
   beforeInstall = onBeforeInstall;
-  if (process.env.WHATSDESK_DEV_UPDATES) autoUpdater.forceDevUpdateConfig = true;
+  if (process.env.PULSO_DEV_UPDATES) autoUpdater.forceDevUpdateConfig = true;
   setTimeout(() => check(false), 8000);
   setInterval(() => check(false), CHECK_INTERVAL);
 }

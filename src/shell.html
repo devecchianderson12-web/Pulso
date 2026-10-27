@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Pulso</title>
+<style>
+  :root { --bg: #0b100f; --fg: #e8f3ee; --muted: #7f948c; --accent: #1fdf8a; --hover: rgba(31, 223, 138, .1); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  body {
+    font: 600 14px/1 "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    color: var(--fg); -webkit-font-smoothing: antialiased; user-select: none;
+  }
+  .bar {
+    height: 40px; display: flex; align-items: center; gap: 4px; padding: 0 8px;
+    -webkit-app-region: drag;
+    background: linear-gradient(90deg, rgba(31, 223, 138, .07), transparent 40%);
+  }
+  .menu {
+    -webkit-app-region: no-drag; width: 34px; height: 30px; border: 0; border-radius: 8px;
+    background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer;
+    transition: background-color .18s cubic-bezier(.2,0,0,1), color .18s cubic-bezier(.2,0,0,1);
+  }
+  .menu:hover { background: var(--hover); color: var(--fg); }
+  .menu:active { transform: scale(.94); }
+  .brand { display: flex; align-items: center; gap: 8px; margin-left: 4px; }
+  .brand svg { width: 22px; height: 22px; filter: drop-shadow(0 0 6px rgba(31, 223, 138, .35)); }
+  .brand span { font-size: 15px; font-weight: 700; letter-spacing: -.2px; }
+  .pill {
+    margin-left: 10px; padding: 4px 9px; border-radius: 99px; font-size: 11.5px; font-weight: 700;
+    background: var(--accent); color: #04140c; opacity: 0; transform: scale(.85);
+    transition: opacity .22s cubic-bezier(.2,0,0,1), transform .3s cubic-bezier(.2,.9,.25,1.2);
+  }
+  .pill.on { opacity: 1; transform: none; }
+  .beat { animation: beat 2.6s cubic-bezier(.4,0,.2,1) infinite; }
+  @keyframes beat {
+    0%, 60%, 100% { filter: drop-shadow(0 0 4px rgba(31, 223, 138, .25)); }
+    70% { filter: drop-shadow(0 0 9px rgba(31, 223, 138, .7)); }
+    80% { filter: drop-shadow(0 0 5px rgba(31, 223, 138, .35)); }
+  }
+  @media (prefers-reduced-motion: reduce) { .beat { animation: none; } }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <button class="menu" id="menu" title="Menú" aria-label="Menú">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M2.5 4h11M2.5 8h11M2.5 12h11"/>
+      </svg>
+    </button>
+    <div class="brand">
+      <svg viewBox="0 0 64 64" class="beat" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#28e896"/><stop offset="1" stop-color="#12b878"/>
+          </linearGradient>
+        </defs>
+        <path d="M20 46 L7 59 L12 42" fill="url(#g)"/>
+        <circle cx="34" cy="30" r="23" fill="none" stroke="url(#g)" stroke-width="6"/>
+        <path class="line" d="M17 32h8l4-10 6 20 4-11 3 4h8" fill="none" stroke="url(#g)" stroke-width="4.5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Pulso</span>
+    </div>
+    <div class="pill" id="pill"></div>
+  </div>
+<script>
+  const pill = document.getElementById('pill');
+  function setUnread(n) {
+    pill.classList.toggle('on', n > 0);
+    if (n > 0) pill.textContent = `${n > 99 ? '99+' : n} sin leer`;
+  }
+  window.shell.onUnread(setUnread);
+  window.shell.info().then(({ unread }) => setUnread(unread));
+  const btn = document.getElementById('menu');
+  btn.addEventListener('click', () => {
+    const r = btn.getBoundingClientRect();
+    window.shell.menu(r.left, r.bottom + 4);
+  });
+</script>
+</body>
+</html>

@@ -50,10 +50,10 @@ Invoke-Checked { npm run dist } 'electron-builder'
 Pop-Location
 $dist = "$BuildDir\dist"
 $assets = @(
-  "$dist\Whatsdesk-Setup-$Version.exe",
-  "$dist\Whatsdesk-Setup-$Version.exe.blockmap",
+  "$dist\Pulso-Setup-$Version.exe",
+  "$dist\Pulso-Setup-$Version.exe.blockmap",
   "$dist\latest.yml",
-  "$dist\Whatsdesk-Portable-$Version.exe"
+  "$dist\Pulso-Portable-$Version.exe"
 )
 foreach ($a in $assets) { if (-not (Test-Path $a)) { throw "No se generó $a" } }
 
@@ -71,10 +71,10 @@ $token = ($cred | Where-Object { $_ -like 'password=*' }) -replace '^password=',
 if (-not $token) { throw 'No hay credencial de GitHub guardada en Git' }
 $headers = @{ Authorization = "Bearer $token"; Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }
 $api = "https://api.github.com/repos/$Owner/$Repo"
-if (-not $Notes) { $Notes = "Whatsdesk $Version" }
+if (-not $Notes) { $Notes = "Pulso $Version" }
 $body = @{
-  tag_name = $Tag; name = "Whatsdesk $Version"; target_commitish = 'main'
-  body = "$Notes`n`n**Descargas:** ``Whatsdesk-Setup-$Version.exe`` (instalador, se actualiza solo) o ``Whatsdesk-Portable-$Version.exe`` (portable)."
+  tag_name = $Tag; name = "Pulso $Version"; target_commitish = 'main'
+  body = "$Notes`n`n**Descargas:** ``Pulso-Setup-$Version.exe`` (instalador, se actualiza solo) o ``Pulso-Portable-$Version.exe`` (portable)."
 } | ConvertTo-Json
 try {
   $release = Invoke-RestMethod "$api/releases/tags/$Tag" -Headers $headers

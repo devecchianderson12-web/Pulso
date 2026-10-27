@@ -1,35 +1,41 @@
-# Whatsdesk para Windows
+<p align="center"><img src="assets/icon.png" width="96" alt="Pulso"></p>
 
-Cliente de escritorio **no oficial** de WhatsApp para Windows, inspirado en
-[mohanrex/whatsdesk](https://github.com/mohanrex/whatsdesk). No está afiliado a WhatsApp ni a Meta.
+<h1 align="center">Pulso</h1>
+<p align="center"><b>Tu WhatsApp, en tu estilo.</b><br>Más simple · Más rápido · Más tuyo</p>
+<p align="center">
+  <a href="https://github.com/devecchianderson12-web/Pulso/releases/latest"><b>Descargar para Windows</b></a>
+</p>
 
-El Whatsdesk original usaba Yowsup2, que reimplementaba el protocolo de WhatsApp. Esa vía
-dejó de funcionar y provoca bloqueos de cuenta. Esta versión ejecuta el cliente oficial de
-**WhatsApp Web** dentro de Electron, así que tiene todas sus funciones y se actualiza sola.
+---
+
+Pulso es un cliente de escritorio **no oficial** de WhatsApp para Windows. Ejecuta el cliente
+oficial de **WhatsApp Web** dentro de Electron, así que tiene todas sus funciones y se mantiene al
+día. Encima le añade integración con Windows y un diseño propio. No está afiliado a WhatsApp ni a Meta.
 
 ## Funciones
 
-- Todo WhatsApp Web: chats, grupos, comunidades, canales, estados, archivos, notas de voz,
+- **Diseño Pulso:** tema oscuro verde, barra de título propia con el logo y contador de no leídos,
+  chats redondeados y transiciones suaves.
+- **Todo WhatsApp Web:** chats, grupos, comunidades, canales, estados, archivos, notas de voz,
   stickers, encuestas, búsqueda y archivados.
 - Notificaciones nativas de Windows. Al hacer clic se abre el chat.
 - Contador de no leídos en la bandeja y en la barra de tareas, con parpadeo al llegar mensajes.
 - Cerrar a la bandeja, iniciar con Windows, iniciar minimizado y una sola instancia.
 - La sesión se queda guardada: el QR se escanea solo una vez.
 - Corrector ortográfico en varios idiomas, con sugerencias en el menú contextual.
-- Los enlaces se abren en tu navegador. Las descargas usan el diálogo "Guardar como" y
-  muestran el progreso en la barra de tareas.
-- Zoom (Ctrl + = / - / 0), pantalla completa (F11), Ctrl+R para recargar, Ctrl+W para ocultar
-  y Ctrl+Q para salir.
-- Opciones para borrar la caché o cerrar sesión y borrar los datos.
-- Actualizaciones automáticas: al publicarse una versión aparece una ventana para actualizar con
-  un clic. También está en **Ajustes → Buscar actualizaciones…** y en el menú de la bandeja.
-  La versión portable abre la página de descarga.
+- **Actualizaciones automáticas:** al publicarse una versión aparece una ventana para actualizar
+  con un clic. También está en **Menú → Ajustes → Buscar actualizaciones…** y en la bandeja.
 - Sin avisos para descargar otras apps de WhatsApp.
-- Animaciones más suaves: aceleración por GPU, desplazamiento suave y transiciones al mostrar
-  u ocultar la ventana.
+- Los enlaces se abren en tu navegador. Las descargas usan el diálogo "Guardar como" y muestran
+  el progreso en la barra de tareas.
+- Atajos: Ctrl + = / - / 0 (zoom), F11 (pantalla completa), Ctrl+R (recargar), Ctrl+W (ocultar)
+  y Ctrl+Q (salir).
 
-**Limitación:** WhatsApp Web no tiene llamadas de voz ni videollamadas, así que esta app
-tampoco. Para llamar desde Windows necesitas la app oficial de la Microsoft Store.
+**Limitación:** WhatsApp Web no tiene llamadas de voz ni videollamadas, así que Pulso tampoco.
+
+**Tema:** el diseño Pulso se aplica con el tema oscuro de WhatsApp. Pulso lo activa por defecto,
+salvo que en WhatsApp hayas elegido el tema claro a mano (Ajustes → Chats → Tema → Predeterminado
+del sistema).
 
 ## Desarrollo
 
@@ -38,24 +44,15 @@ npm install
 npm start
 ```
 
-## Generar el instalador
-
-```bash
-npm run dist
-```
-
-Genera en `dist/` el instalador (`Whatsdesk-Setup-x.y.z.exe`) y la versión portable.
-NSIS falla con rutas de más de 260 caracteres: compila desde una carpeta con ruta corta.
-
 ## Publicar una versión nueva
 
 ```powershell
-.\scripts\release.ps1 -Version 1.2.0 -Notes "Qué cambió"
+.\scripts\release.ps1 -Version 1.3.0 -Notes "Qué cambió"
 ```
 
-El script sube la versión, compila en una carpeta de ruta corta y sube el código a `main` con
-la etiqueta `v1.2.0`. Después crea el release en GitHub con el instalador, `latest.yml`, el
-`.blockmap` y la versión portable. Las copias instaladas lo detectan solas (al arrancar y cada
-4 horas) y se actualizan cuando el usuario pulsa **Actualizar**.
+El script sube la versión, compila en una carpeta de ruta corta (NSIS falla con rutas de más de
+260 caracteres) y sube el código a `main` con la etiqueta `v1.3.0`. Después crea el release en
+GitHub con el instalador, `latest.yml`, el `.blockmap` y la versión portable. Las copias
+instaladas lo detectan solas (al arrancar y cada 4 horas) y se actualizan al pulsar **Actualizar**.
 
-Licencia: GPL-3.0-or-later, igual que el proyecto original.
+Licencia: GPL-3.0-or-later.

@@ -89,22 +89,43 @@ function textHit(text, u, v, cx, cy, h) {
   return DIGITS[text[ch]][row][cc] === '1';
 }
 
-// Chat bubble with three dots: an original mark, not WhatsApp's logo.
-function bubble(u, v) {
-  const dx = u - 0.5, dy = v - 0.47;
-  const inCircle = dx * dx + dy * dy <= 0.4 * 0.4;
-  const inTail = v > 0.62 && v < 0.94 && u > 0.16 && u < 0.42 && (u - 0.16) > (v - 0.62) * 0.2 &&
-    (0.42 - u) > (v - 0.62) * 0.81;
-  if (!inCircle && !inTail) return null;
-  for (const ox of [0.32, 0.5, 0.68]) {
-    const ddx = u - ox, ddy = v - 0.47;
-    if (ddx * ddx + ddy * ddy <= 0.055 * 0.055) return WHITE;
-  }
-  return GREEN;
+function segDist(px, py, ax, ay, bx, by) {
+  const vx = bx - ax, vy = by - ay;
+  const t = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy)));
+  const dx = px - (ax + vx * t), dy = py - (ay + vy * t);
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
+function inTriangle(px, py, [ax, ay], [bx, by], [cx, cy]) {
+  const s = (x1, y1, x2, y2, x3, y3) => (x1 - x3) * (y2 - y3) - (x2 - x3) * (y1 - y3);
+  const d1 = s(px, py, ax, ay, bx, by), d2 = s(px, py, bx, by, cx, cy), d3 = s(px, py, cx, cy, ax, ay);
+  return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+}
+
+const PULSE = [[0.27, 0.5], [0.39, 0.5], [0.45, 0.35], [0.53, 0.65], [0.59, 0.47], [0.63, 0.53], [0.73, 0.53]];
+
+// Pulso mark: outlined speech bubble with a heartbeat line, in a green gradient.
+// `bold` thickens the strokes so the mark stays legible at tray sizes.
+function pulseMark(u, v, bold = 1) {
+  const cx = 0.53, cy = 0.47, R = 0.41, ring = 0.085 * bold;
+  const d = Math.hypot(u - cx, v - cy);
+  const tail = inTriangle(u, v, [0.2, 0.62], [0.36, 0.8], [0.1, 0.93]);
+  const tailHole = inTriangle(u, v, [0.24, 0.66], [0.31, 0.74], [0.19, 0.82]) && d > R - ring;
+  const onRing = d <= R && d >= R - ring;
+  let line = false;
+  for (let i = 0; i < PULSE.length - 1; i++) {
+    const [ax, ay] = PULSE[i], [bx, by] = PULSE[i + 1];
+    if (segDist(u, v, ax, ay, bx, by) <= 0.034 * bold) { line = true; break; }
+  }
+  if (!(onRing || (tail && !tailHole && d > R - ring) || line)) return null;
+  const t = Math.max(0, Math.min(1, (u + v) / 2));
+  return [Math.round(40 - 22 * t), Math.round(232 - 50 * t), Math.round(150 - 30 * t), 1];
+}
+
+const bubble = (u, v) => pulseMark(u, v, 1.35);
+
 function appIcon(size = 256) {
-  return encodePng(size, render(size, bubble));
+  return encodePng(size, render(size, (u, v) => pulseMark(u, v, size < 64 ? 1.35 : 1)));
 }
 
 function badgeLabel(count) {

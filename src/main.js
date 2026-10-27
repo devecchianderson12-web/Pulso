@@ -1,8 +1,22 @@
+const fs = require('fs');
 const path = require('path');
 const {
-  app, BrowserWindow, Tray, Menu, nativeImage, shell, session, ipcMain,
-  Notification, dialog, clipboard, desktopCapturer,
+  app, BrowserWindow, WebContentsView, Tray, Menu, nativeImage, nativeTheme, shell, session,
+  ipcMain, Notification, dialog, clipboard, desktopCapturer,
 } = require('electron');
+
+// Versions up to 1.1.0 kept their data under the app's previous name: move the
+// login session and settings over so updating doesn't require scanning the QR again.
+const legacyData = path.join(app.getPath('appData'), 'Whatsdesk');
+const dataDir = path.join(app.getPath('appData'), 'Pulso');
+if (!fs.existsSync(dataDir) && fs.existsSync(legacyData)) {
+  try {
+    fs.renameSync(legacyData, dataDir);
+  } catch {
+    app.setPath('userData', legacyData);
+  }
+}
+
 const settings = require('./settings');
 const icons = require('./icons');
 const updater = require('./updater');
@@ -12,6 +26,9 @@ for (const flag of ['enable-smooth-scrolling', 'enable-gpu-rasterization', 'enab
   app.commandLine.appendSwitch(flag);
 }
 
+const APP_NAME = 'Pulso';
+const TITLE_BAR_HEIGHT = 40;
+const BG = '#0b100f';
 const WHATSAPP_URL = 'https://web.whatsapp.com/';
 const WHATSAPP_ORIGIN = 'https://web.whatsapp.com';
 const PARTITION = 'persist:whatsapp';
@@ -28,6 +45,7 @@ const PROMO_LINK =
   /whatsapp\.com\/download|apps\.microsoft\.com|get\.microsoft\.com|ms-windows-store:|apps\.apple\.com|play\.google\.com/i;
 
 let win;
+let wa; // WhatsApp Web's webContents, shown below the title bar.
 let tray;
 let quitting = false;
 let unread = 0;
@@ -39,7 +57,9 @@ if (!app.requestSingleInstanceLock()) {
   app.whenReady().then(start);
 }
 
-app.setAppUserModelId('com.whatsdesk.windows');
+app.setAppUserModelId('com.pulso.windows');
+// Pulso's look is dark; WhatsApp Web follows it when its theme is "system default".
+nativeTheme.themeSource = 'dark';
 
 function start() {
   const ses = session.fromPartition(PARTITION);
@@ -90,11 +110,21 @@ function createWindow() {
     ...bounds,
     minWidth: 640,
     minHeight: 480,
-    title: 'Whatsdesk',
+    title: APP_NAME,
     icon: nativeImage.createFromBuffer(icons.appIcon()),
-    autoHideMenuBar: true,
-    backgroundColor: '#111b21',
+    backgroundColor: BG,
     show: false,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: BG, symbolColor: '#cfe9dd', height: TITLE_BAR_HEIGHT },
+    webPreferences: {
+      preload: path.join(__dirname, 'shell-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  win.loadFile(path.join(__dirname, 'shell.html'));
+
+  const view = new WebContentsView({
     webPreferences: {
       partition: PARTITION,
       preload: path.join(__dirname, 'preload.js'),
@@ -105,6 +135,18 @@ function createWindow() {
       backgroundThrottling: false,
     },
   });
+  view.setBackgroundColor(BG);
+  win.contentView.addChildView(view);
+  wa = view.webContents;
+  const layout = () => {
+    const [width, height] = win.getContentSize();
+    const top = win.isFullScreen() ? 0 : TITLE_BAR_HEIGHT;
+    view.setBounds({ x: 0, y: top, width, height: height - top });
+  };
+  layout();
+  win.on('resize', layout);
+  win.on('enter-full-screen', layout);
+  win.on('leave-full-screen', layout);
 
   if (settings.get('maximized')) win.maximize();
   const hidden = process.argv.includes('--hidden') || settings.get('startMinimized');
@@ -112,29 +154,41 @@ function createWindow() {
     if (!hidden) showWindow();
   });
 
-  const wc = win.webContents;
-  wc.setZoomFactor(settings.get('zoomFactor'));
-  wc.loadURL(WHATSAPP_URL, { userAgent: USER_AGENT });
+  wa.setZoomFactor(settings.get('zoomFactor'));
+  wa.loadURL(WHATSAPP_URL, { userAgent: USER_AGENT });
 
-  wc.setWindowOpenHandler(({ url }) => {
+  wa.setWindowOpenHandler(({ url }) => {
     if (!isWhatsApp(url)) openExternal(url);
     return { action: 'deny' };
   });
-  wc.on('will-navigate', (event, url) => {
+  wa.on('will-navigate', (event, url) => {
     if (!isWhatsApp(url)) {
       event.preventDefault();
       openExternal(url);
     }
   });
-  wc.on('page-title-updated', (event, title) => {
-    event.preventDefault();
+  wa.on('page-title-updated', (event, title) => {
     const match = /^\((\d+)\)/.exec(title);
     setUnread(match ? Number(match[1]) : 0);
-    win.setTitle(unread ? `(${icons.badgeLabel(unread)}) Whatsdesk` : 'Whatsdesk');
   });
-  wc.on('context-menu', (event, params) => showContextMenu(params));
-  wc.on('render-process-gone', (event, details) => {
-    if (details.reason !== 'clean-exit') wc.reload();
+  wa.on('context-menu', (event, params) => showContextMenu(params));
+  wa.on('render-process-gone', (event, details) => {
+    if (details.reason !== 'clean-exit') wa.reload();
+  });
+  // The hidden title bar also hides the menu bar, so handle its shortcuts here.
+  wa.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return;
+    const key = input.key.toLowerCase();
+    if (input.key === 'F11') toggleFullScreen();
+    else if (!input.control || input.alt) return;
+    else if (key === 'q') quit();
+    else if (key === 'r' && !input.shift) wa.reload();
+    else if (key === 'w') hideWindow();
+    else if (key === '=' || key === '+') setZoom(0.1);
+    else if (key === '-') setZoom(-0.1);
+    else if (key === '0') setZoom(0);
+    else return;
+    event.preventDefault();
   });
 
   win.on('close', (event) => {
@@ -144,7 +198,14 @@ function createWindow() {
       hideWindow();
     }
   });
-  win.on('focus', () => win.flashFrame(false));
+  win.on('focus', () => {
+    win.flashFrame(false);
+    wa.focus();
+  });
+}
+
+function toggleFullScreen() {
+  win.setFullScreen(!win.isFullScreen());
 }
 
 function saveBounds() {
@@ -209,11 +270,13 @@ function setUnread(count) {
   const grew = count > unread;
   unread = count;
   tray.setImage(nativeImage.createFromBuffer(icons.trayIcon(count)));
-  tray.setToolTip(count ? `Whatsdesk — ${count} sin leer` : 'Whatsdesk');
+  tray.setToolTip(count ? `${APP_NAME} — ${count} sin leer` : APP_NAME);
   win.setOverlayIcon(
     count ? nativeImage.createFromBuffer(icons.overlayIcon(count)) : null,
     count ? `${count} mensajes sin leer` : '',
   );
+  win.setTitle(count ? `(${icons.badgeLabel(count)}) ${APP_NAME}` : APP_NAME);
+  win.webContents.send('shell:unread', count);
   if (grew) flash();
 }
 
@@ -221,20 +284,24 @@ function flash() {
   if (settings.get('flashOnMessage') && !win.isFocused()) win.flashFrame(true);
 }
 
-ipcMain.on('whatsdesk:focus', showWindow);
-ipcMain.on('whatsdesk:notified', flash);
-ipcMain.on('whatsdesk:settings', (event) => {
+ipcMain.on('pulso:focus', showWindow);
+ipcMain.on('pulso:notified', flash);
+ipcMain.on('pulso:settings', (event) => {
   event.returnValue = { notificationSound: settings.get('notificationSound') };
 });
+ipcMain.on('shell:menu', (event, x, y) => {
+  Menu.getApplicationMenu().popup({ window: win, x: Math.round(x), y: Math.round(y) });
+});
+ipcMain.handle('shell:info', () => ({ version: app.getVersion(), unread }));
 
 function createTray() {
   tray = new Tray(nativeImage.createFromBuffer(icons.trayIcon(0)));
-  tray.setToolTip('Whatsdesk');
+  tray.setToolTip(APP_NAME);
   tray.on('click', toggleWindow);
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Mostrar Whatsdesk', click: showWindow },
+    { label: `Mostrar ${APP_NAME}`, click: showWindow },
     { type: 'separator' },
-    { label: 'Recargar', click: () => win.webContents.reload() },
+    { label: 'Recargar', click: () => wa.reload() },
     { label: 'Buscar actualizaciones…', click: () => updater.check(true) },
     { type: 'separator' },
     { label: 'Salir', click: quit },
@@ -254,9 +321,8 @@ function toggleSetting(label, key, after) {
 }
 
 function setZoom(delta) {
-  const wc = win.webContents;
-  const factor = delta === 0 ? 1 : Math.min(3, Math.max(0.5, wc.getZoomFactor() + delta));
-  wc.setZoomFactor(factor);
+  const factor = delta === 0 ? 1 : Math.min(3, Math.max(0.5, wa.getZoomFactor() + delta));
+  wa.setZoomFactor(factor);
   settings.set('zoomFactor', factor);
 }
 
@@ -286,7 +352,7 @@ function buildMenu() {
     {
       label: 'Archivo',
       submenu: [
-        { label: 'Recargar', accelerator: 'CmdOrCtrl+R', click: () => win.webContents.reload() },
+        { label: 'Recargar', accelerator: 'CmdOrCtrl+R', click: () => wa.reload() },
         { label: 'Ocultar en la bandeja', accelerator: 'CmdOrCtrl+W', click: hideWindow },
         { type: 'separator' },
         { label: 'Borrar caché y recargar', click: clearCache },
@@ -311,8 +377,8 @@ function buildMenu() {
         { label: 'Alejar', accelerator: 'CmdOrCtrl+-', click: () => setZoom(-0.1) },
         { label: 'Tamaño real', accelerator: 'CmdOrCtrl+0', click: () => setZoom(0) },
         { type: 'separator' },
-        { role: 'togglefullscreen', label: 'Pantalla completa' },
-        { role: 'toggleDevTools', label: 'Herramientas de desarrollo' },
+        { label: 'Pantalla completa', accelerator: 'F11', click: toggleFullScreen },
+        { label: 'Herramientas de desarrollo', click: () => wa.toggleDevTools() },
       ],
     },
     {
@@ -324,7 +390,7 @@ function buildMenu() {
         toggleSetting('Iniciar con Windows', 'launchAtLogin', applyLaunchAtLogin),
         toggleSetting('Iniciar minimizado', 'startMinimized'),
         { type: 'separator' },
-        toggleSetting('Sonido en notificaciones', 'notificationSound', () => win.webContents.reload()),
+        toggleSetting('Sonido en notificaciones', 'notificationSound', () => wa.reload()),
         toggleSetting('Parpadear en la barra de tareas', 'flashOnMessage'),
         { type: 'separator' },
         { label: 'Corrector ortográfico', submenu: spellMenu() },
@@ -334,7 +400,7 @@ function buildMenu() {
       label: 'Ayuda',
       submenu: [
         { label: 'Centro de ayuda de WhatsApp', click: () => openExternal('https://faq.whatsapp.com/') },
-        { label: 'Acerca de Whatsdesk', click: showAbout },
+        { label: `Acerca de ${APP_NAME}`, click: showAbout },
       ],
     },
   ];
@@ -353,7 +419,7 @@ async function clearCache() {
   const ses = session.fromPartition(PARTITION);
   await ses.clearCache();
   await ses.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] });
-  win.webContents.reload();
+  wa.reload();
 }
 
 async function resetSession() {
@@ -368,31 +434,30 @@ async function resetSession() {
   });
   if (response !== 1) return;
   await session.fromPartition(PARTITION).clearStorageData();
-  win.webContents.reload();
+  wa.reload();
 }
 
 function showAbout() {
   dialog.showMessageBox(win, {
     type: 'info',
-    title: 'Acerca de Whatsdesk',
-    message: `Whatsdesk ${app.getVersion()}`,
+    title: `Acerca de ${APP_NAME}`,
+    message: `${APP_NAME} ${app.getVersion()}`,
     detail:
-      'Cliente de escritorio no oficial para Windows que ejecuta WhatsApp Web.\n' +
+      'Tu WhatsApp, en tu estilo. Cliente de escritorio no oficial para Windows que ejecuta WhatsApp Web.\n' +
       'No está afiliado a WhatsApp ni a Meta.\n' +
       `Electron ${process.versions.electron} · Chromium ${process.versions.chrome}`,
   });
 }
 
 function showContextMenu(params) {
-  const wc = win.webContents;
   const items = [];
   if (params.misspelledWord) {
     for (const s of params.dictionarySuggestions.slice(0, 5)) {
-      items.push({ label: s, click: () => wc.replaceMisspelling(s) });
+      items.push({ label: s, click: () => wa.replaceMisspelling(s) });
     }
     items.push({
       label: 'Añadir al diccionario',
-      click: () => wc.session.addWordToSpellCheckerDictionary(params.misspelledWord),
+      click: () => wa.session.addWordToSpellCheckerDictionary(params.misspelledWord),
     });
     items.push({ type: 'separator' });
   }
@@ -402,8 +467,8 @@ function showContextMenu(params) {
     items.push({ type: 'separator' });
   }
   if (params.mediaType === 'image' && params.srcURL) {
-    items.push({ label: 'Copiar imagen', click: () => wc.copyImageAt(params.x, params.y) });
-    items.push({ label: 'Guardar imagen como…', click: () => wc.downloadURL(params.srcURL) });
+    items.push({ label: 'Copiar imagen', click: () => wa.copyImageAt(params.x, params.y) });
+    items.push({ label: 'Guardar imagen como…', click: () => wa.downloadURL(params.srcURL) });
     items.push({ type: 'separator' });
   }
   const { editFlags } = params;

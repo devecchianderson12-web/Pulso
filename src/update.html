@@ -113,18 +113,18 @@
           icon: 'download', title: 'Hay una actualización', sub: `Versión ${s.version} · tienes la ${s.current}`,
           text: s.portable
             ? 'Estás usando la versión portable. Descarga la nueva versión desde la página de descargas.'
-            : 'Se descargará e instalará automáticamente. Whatsdesk se reiniciará en unos segundos.',
+            : 'Se descargará e instalará automáticamente. Pulso se reiniciará en unos segundos.',
           primary: s.portable ? 'Descargar' : 'Actualizar', action: 'update', secondary: 'Más tarde',
         };
       case 'progress':
-        return { icon: 'download', title: 'Descargando actualización', sub: 'No cierres Whatsdesk',
+        return { icon: 'download', title: 'Descargando actualización', sub: 'No cierres Pulso',
           text: '', progress: s.percent };
       case 'installing':
         return { icon: 'spinner', title: 'Instalando…', sub: `Versión ${s.version}`,
-          text: 'Whatsdesk se cerrará y volverá a abrirse con la nueva versión.', progress: 100 };
+          text: 'Pulso se cerrará y volverá a abrirse con la nueva versión.', progress: 100 };
       case 'none':
         return { icon: 'check', title: 'Estás al día', sub: `Versión ${s.current}`,
-          text: 'Ya tienes la última versión de Whatsdesk.', primary: 'Aceptar', action: 'close' };
+          text: 'Ya tienes la última versión de Pulso.', primary: 'Aceptar', action: 'close' };
       case 'error':
         return { icon: 'alert', title: 'No se pudo actualizar', sub: 'Inténtalo de nuevo más tarde',
           text: s.message || '', primary: 'Reintentar', action: 'retry', secondary: 'Cerrar' };
