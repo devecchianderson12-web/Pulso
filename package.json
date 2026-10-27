@@ -1,0 +1,36 @@
+{
+  "name": "whatsdesk-windows",
+  "productName": "Whatsdesk",
+  "version": "1.0.0",
+  "description": "Cliente de escritorio no oficial para WhatsApp Web en Windows",
+  "main": "src/main.js",
+  "license": "GPL-3.0-or-later",
+  "author": "Whatsdesk",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable",
+    "pack": "electron-builder --win dir"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.whatsdesk.windows",
+    "productName": "Whatsdesk",
+    "directories": { "output": "dist" },
+    "files": ["src/**/*", "assets/**/*", "package.json"],
+    "win": {
+      "icon": "assets/icon.png",
+      "target": ["nsis", "portable"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Whatsdesk"
+    },
+    "portable": { "artifactName": "Whatsdesk-Portable-${version}.exe" }
+  }
+}
