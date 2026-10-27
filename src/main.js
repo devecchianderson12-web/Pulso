@@ -30,10 +30,12 @@ const BG = '#0b100f';
 const WHATSAPP_URL = 'https://web.whatsapp.com/';
 const WHATSAPP_ORIGIN = 'https://web.whatsapp.com';
 const PARTITION = 'persist:whatsapp';
-// WhatsApp Web rejects unknown browsers, so present as desktop Chrome.
+// WhatsApp Web rejects unknown browsers, so present as desktop Chrome of the bundled Chromium version.
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+  `(KHTML, like Gecko) Chrome/${process.versions.chrome.split('.')[0]}.0.0.0 Safari/537.36`;
+// Edge's wheel scrolling: percent-based steps and a smoother curve, closer to a phone's feel.
+app.commandLine.appendSwitch('enable-features', 'WindowsScrollingPersonality,PercentBasedScrolling');
 const ALLOWED_PERMISSIONS = new Set([
   'notifications', 'media', 'mediaKeySystem', 'clipboard-read',
   'clipboard-sanitized-write', 'fullscreen', 'display-capture',
@@ -63,6 +65,7 @@ function start() {
   const ses = session.fromPartition(PARTITION);
   ses.setUserAgent(USER_AGENT);
   ses.setSpellCheckerLanguages(settings.get('spellcheckLanguages'));
+  ses.setSpellCheckerEnabled(settings.get('spellcheck'));
   ses.setPermissionRequestHandler((wc, permission, cb, details) => {
     cb(isWhatsApp(details.requestingUrl) && ALLOWED_PERMISSIONS.has(permission));
   });
@@ -80,7 +83,10 @@ function start() {
   createTray();
   buildMenu();
   applyLaunchAtLogin();
-  updater.init(win, () => { quitting = true; });
+  updater.init(win, wa, () => { quitting = true; });
+  wa.once('did-finish-load', () => setTimeout(() => {
+    gpu.detectSoftware().then((lite) => { if (!wa.isDestroyed()) wa.send('pulso:lite', lite); });
+  }, 1500));
 }
 
 function isWhatsApp(url) {
@@ -320,7 +326,7 @@ function flash() {
 ipcMain.on('pulso:focus', showWindow);
 ipcMain.on('pulso:notified', flash);
 ipcMain.on('pulso:settings', (event) => {
-  event.returnValue = { notificationSound: settings.get('notificationSound') };
+  event.returnValue = { notificationSound: settings.get('notificationSound'), lite: gpu.state().software };
 });
 ipcMain.on('shell:menu', (event, x, y) => {
   Menu.getApplicationMenu().popup({ window: win, x: Math.round(x), y: Math.round(y) });
@@ -426,7 +432,14 @@ function buildMenu() {
         toggleSetting('Sonido en notificaciones', 'notificationSound', () => wa.reload()),
         toggleSetting('Parpadear en la barra de tareas', 'flashOnMessage'),
         { type: 'separator' },
-        { label: 'Corrector ortográfico', submenu: spellMenu() },
+        {
+          label: 'Corrector ortográfico',
+          submenu: [
+            toggleSetting('Activado', 'spellcheck', (on) => session.fromPartition(PARTITION).setSpellCheckerEnabled(on)),
+            { type: 'separator' },
+            ...spellMenu(),
+          ],
+        },
         { type: 'separator' },
         {
           label: `Optimizar gráficos (ahora: ${gpu.state().label})`,

@@ -1,19 +1,31 @@
-// Bridges WhatsApp Web's notifications to the desktop window: clicking a
-// notification brings Pulso to the front even when it sits in the tray.
-const { contextBridge, ipcRenderer, webFrame } = require('electron');
-
-contextBridge.exposeInMainWorld('pulso', {
-  focus: () => ipcRenderer.send('pulso:focus'),
-  notified: () => ipcRenderer.send('pulso:notified'),
-});
-
+// Bridges WhatsApp Web's page and Pulso: notification clicks bring Pulso to the front even
+// when it sits in the tray, and the update banner talks to the updater.
 const fs = require('fs');
 const path = require('path');
+const { contextBridge, ipcRenderer, webFrame } = require('electron');
+
+// Synchronous so everything is in place before WhatsApp's own scripts run.
+const { notificationSound, lite } = ipcRenderer.sendSync('pulso:settings');
+
+contextBridge.exposeInMainWorld('pulso', {
+  lite,
+  focus: () => ipcRenderer.send('pulso:focus'),
+  notified: () => ipcRenderer.send('pulso:notified'),
+  update: (action) => ipcRenderer.send('update:action', action),
+  pendingUpdate: () => ipcRenderer.invoke('update:get'),
+});
+
+ipcRenderer.on('pulso:lite', (e, lite) => {
+  window.dispatchEvent(new CustomEvent('pulso-lite', { detail: lite ? '1' : '0' }));
+});
+
+// Update states reach the page as a DOM event (strings cross the isolated worlds safely).
+ipcRenderer.on('pulso:update-state', (e, state) => {
+  window.dispatchEvent(new CustomEvent('pulso-update', { detail: JSON.stringify(state) }));
+});
 
 webFrame.executeJavaScript(fs.readFileSync(path.join(__dirname, 'page.js'), 'utf8'));
 
-// Synchronous so the patch is in place before WhatsApp's own scripts run.
-const { notificationSound } = ipcRenderer.sendSync('pulso:settings');
 webFrame.executeJavaScript(`(() => {
     const Native = window.Notification;
     if (!Native || Native.__pulso) return;

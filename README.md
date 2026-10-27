@@ -25,9 +25,13 @@ día. Encima le añade integración con Windows y un diseño propio. No está af
 - Contador de no leídos en la bandeja y en la barra de tareas, con parpadeo al llegar mensajes.
 - Cerrar a la bandeja, iniciar con Windows, iniciar minimizado y una sola instancia.
 - La sesión se queda guardada: el QR se escanea solo una vez.
-- Corrector ortográfico en varios idiomas, con sugerencias en el menú contextual.
-- **Actualizaciones automáticas:** al publicarse una versión aparece una ventana para actualizar
-  con un clic. También está en **Menú → Ajustes → Buscar actualizaciones…** y en la bandeja.
+- Corrector ortográfico en varios idiomas, con sugerencias en el menú contextual. Se puede
+  apagar en **☰ → Ajustes → Corrector ortográfico → Activado**.
+- **Actualizaciones automáticas:** al publicarse una versión aparece un aviso al pie de la lista
+  de chats con **Actualizar** y **Más tarde**. También está en **☰ → Ajustes → Buscar
+  actualizaciones…** y en la bandeja.
+- **Modo ligero automático:** si el equipo no tiene GPU utilizable (dibujo por CPU), Pulso
+  desactiva los efectos más costosos.
 - Sin avisos para descargar otras apps de WhatsApp.
 - Los enlaces se abren en tu navegador. Las descargas usan el diálogo "Guardar como" y muestran
   el progreso en la barra de tareas.

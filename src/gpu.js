@@ -12,7 +12,8 @@ const MODES = [
   { id: 'soft', label: 'Sin GPU', soft: true },                           // last resort
 ];
 // Bump to measure again on every install (e.g. after changing the switches below).
-const TUNE_VERSION = 1;
+// 2: software-emulated GPUs now count as failed, so PCs tuned with 1.3.0 measure again.
+const TUNE_VERSION = 2;
 
 let tune;
 let mode;
@@ -42,6 +43,7 @@ function setup() {
     else { id = bestMode(tune.tried); tune.done = true; }
   }
   mode = MODES.find((m) => m.id === id);
+  software = mode.soft || (stored.mode === id && settings.get('gpuSoftware') === true);
   tune.pending = !tune.done;
   tune.pendingMode = tune.done ? undefined : id;
   save();
@@ -76,7 +78,9 @@ function relaunch() {
 // Called with the fps measured by the window. Returns what happens next.
 function report(fps, beforeRelaunch) {
   if (tune.done || !Number.isFinite(fps)) return { action: 'none' };
-  tune.tried[mode.id] = Math.round(fps);
+  // A GPU mode that ends up drawing in software is worse than the real software mode: it
+  // pays for the GPU process and emulation on top. Count it as failed.
+  tune.tried[mode.id] = software && !mode.soft ? 0 : Math.round(fps);
   const next = MODES.find((m) => !(m.id in tune.tried));
   // "Smooth enough" = 85 % of the monitor refresh rate, capped at 52 fps.
   let hz = 60;
@@ -111,8 +115,33 @@ function retune(beforeRelaunch) {
   relaunch();
 }
 
-function state() {
-  return { done: tune.done, mode: mode.id, label: mode.label, fps: tune.tried[mode.id] };
+// True when this mode draws with the CPU: software compositing, or a "GPU" that is really a
+// software emulation (SwiftShader, Microsoft Basic Render Driver).
+// Until detection runs, the previous launch's result is used. Call it once a page has painted:
+// before the GPU starts, the feature status reads "disabled" even on a working GPU.
+let software = false;
+async function detectSoftware() {
+  if (mode.soft) {
+    software = true;
+  } else {
+    try {
+      const status = app.getGPUFeatureStatus();
+      const info = await app.getGPUInfo('basic');
+      const active = (info.gpuDevice || []).find((d) => d.active);
+      const emulated = Boolean(active) && (active.vendorId === 0x1ae0 ||
+        (active.vendorId === 0x1414 && active.deviceId === 0x8c) ||
+        /swiftshader|basic render/i.test(active.deviceString || ''));
+      software = emulated || /^disabled/.test(status.gpu_compositing);
+    } catch {
+      // Keep the previous value.
+    }
+  }
+  settings.set('gpuSoftware', software);
+  return software;
 }
 
-module.exports = { setup, loaded, report, retune, state };
+function state() {
+  return { done: tune.done, mode: mode.id, label: mode.label, fps: tune.tried[mode.id], software };
+}
+
+module.exports = { setup, loaded, report, retune, state, detectSoftware };

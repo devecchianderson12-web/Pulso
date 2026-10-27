@@ -10,6 +10,7 @@ const DEFAULTS = {
   launchAtLogin: false,
   notificationSound: true,
   flashOnMessage: true,
+  spellcheck: true,
   spellcheckLanguages: ['es', 'en-US'],
   zoomFactor: 1,
 };

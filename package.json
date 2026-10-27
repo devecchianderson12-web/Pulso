@@ -13,7 +13,7 @@
     "pack": "electron-builder --win dir"
   },
   "devDependencies": {
-    "electron": "33.2.1",
+    "electron": "44.7.1",
     "electron-builder": "25.1.8"
   },
   "build": {

@@ -1,4 +1,5 @@
-// Checks GitHub Releases for new versions and drives the rounded update popup.
+// Checks GitHub Releases for new versions. A found update shows as a banner at the bottom of
+// the chat list (inside WhatsApp Web); the rounded popup covers manual checks and errors.
 const path = require('path');
 const { app, BrowserWindow, ipcMain, shell, screen } = require('electron');
 const { autoUpdater } = require('electron-updater');
@@ -9,6 +10,7 @@ const CHECK_INTERVAL = 4 * 60 * 60 * 1000;
 const PORTABLE = Boolean(process.env.PORTABLE_EXECUTABLE_DIR);
 
 let parent;
+let page; // WhatsApp Web's webContents, which hosts the banner.
 let popup;
 let state = { kind: 'idle' };
 let manual = false;
@@ -17,9 +19,16 @@ let beforeInstall = () => {};
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
+const BANNER_STATES = ['available', 'progress', 'installing', 'hidden'];
+
 function send(next) {
   state = next;
   if (popup && !popup.isDestroyed()) popup.webContents.send('update:state', state);
+  if (BANNER_STATES.includes(state.kind) && page && !page.isDestroyed()) page.send('pulso:update-state', state);
+}
+
+function hideBanner() {
+  if (page && !page.isDestroyed()) page.send('pulso:update-state', { kind: 'hidden' });
 }
 
 function openPopup() {
@@ -67,8 +76,10 @@ autoUpdater.on('checking-for-update', () => {
   if (manual) send({ kind: 'checking' });
 });
 autoUpdater.on('update-available', (info) => {
+  // Once dismissed with "Más tarde", automatic checks stay quiet until the next launch.
+  if (dismissed === info.version && !manual) return;
+  closePopup();
   send({ kind: 'available', version: info.version, current: app.getVersion(), portable: PORTABLE });
-  openPopup();
 });
 autoUpdater.on('update-not-available', () => {
   if (manual) send({ kind: 'none', current: app.getVersion() });
@@ -91,21 +102,28 @@ function friendlyError(err) {
 autoUpdater.on('error', (err) => {
   console.error('Actualización:', err);
   if (manual || state.kind === 'progress') {
+    hideBanner();
     send({ kind: 'error', message: friendlyError(err) });
     openPopup();
   }
 });
 
+let dismissed = null;
+
 ipcMain.handle('update:get', () => state);
 ipcMain.on('update:action', (event, action) => {
   if (action === 'update') {
+    if (state.kind !== 'available') return;
     if (state.portable) {
       shell.openExternal(RELEASES_URL);
-      closePopup();
+      send({ kind: 'hidden' });
       return;
     }
     send({ kind: 'progress', percent: 0 });
     autoUpdater.downloadUpdate().catch(() => {});
+  } else if (action === 'later') {
+    if (state.kind === 'available') dismissed = state.version;
+    send({ kind: 'hidden' });
   } else if (action === 'retry') {
     check(true);
   } else if (action === 'close') {
@@ -132,8 +150,9 @@ function check(isManual) {
   autoUpdater.checkForUpdates().catch(() => {});
 }
 
-function init(win, onBeforeInstall) {
+function init(win, waContents, onBeforeInstall) {
   parent = win;
+  page = waContents;
   beforeInstall = onBeforeInstall;
   if (process.env.PULSO_DEV_UPDATES) autoUpdater.forceDevUpdateConfig = true;
   setTimeout(() => check(false), 8000);
