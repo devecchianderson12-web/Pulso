@@ -1,7 +1,7 @@
 {
   "name": "pulso",
   "productName": "Pulso",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Pulso: tu WhatsApp, en tu estilo. Cliente de escritorio no oficial para Windows",
   "main": "src/main.js",
   "license": "GPL-3.0-or-later",
