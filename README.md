@@ -21,6 +21,12 @@ dejó de funcionar y provoca bloqueos de cuenta. Esta versión ejecuta el client
 - Zoom (Ctrl + = / - / 0), pantalla completa (F11), Ctrl+R para recargar, Ctrl+W para ocultar
   y Ctrl+Q para salir.
 - Opciones para borrar la caché o cerrar sesión y borrar los datos.
+- Actualizaciones automáticas: al publicarse una versión aparece una ventana para actualizar con
+  un clic. También está en **Ajustes → Buscar actualizaciones…** y en el menú de la bandeja.
+  La versión portable abre la página de descarga.
+- Sin avisos para descargar otras apps de WhatsApp.
+- Animaciones más suaves: aceleración por GPU, desplazamiento suave y transiciones al mostrar
+  u ocultar la ventana.
 
 **Limitación:** WhatsApp Web no tiene llamadas de voz ni videollamadas, así que esta app
 tampoco. Para llamar desde Windows necesitas la app oficial de la Microsoft Store.
@@ -38,7 +44,18 @@ npm start
 npm run dist
 ```
 
-Genera en `dist/` el instalador (`Whatsdesk Setup x.y.z.exe`) y la versión portable.
+Genera en `dist/` el instalador (`Whatsdesk-Setup-x.y.z.exe`) y la versión portable.
 NSIS falla con rutas de más de 260 caracteres: compila desde una carpeta con ruta corta.
+
+## Publicar una versión nueva
+
+```powershell
+.\scripts\release.ps1 -Version 1.2.0 -Notes "Qué cambió"
+```
+
+El script sube la versión, compila en una carpeta de ruta corta y sube el código a `main` con
+la etiqueta `v1.2.0`. Después crea el release en GitHub con el instalador, `latest.yml`, el
+`.blockmap` y la versión portable. Las copias instaladas lo detectan solas (al arrancar y cada
+4 horas) y se actualizan cuando el usuario pulsa **Actualizar**.
 
 Licencia: GPL-3.0-or-later, igual que el proyecto original.

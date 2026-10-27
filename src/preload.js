@@ -7,6 +7,11 @@ contextBridge.exposeInMainWorld('whatsdesk', {
   notified: () => ipcRenderer.send('whatsdesk:notified'),
 });
 
+const fs = require('fs');
+const path = require('path');
+
+webFrame.executeJavaScript(fs.readFileSync(path.join(__dirname, 'page.js'), 'utf8'));
+
 // Synchronous so the patch is in place before WhatsApp's own scripts run.
 const { notificationSound } = ipcRenderer.sendSync('whatsdesk:settings');
 webFrame.executeJavaScript(`(() => {

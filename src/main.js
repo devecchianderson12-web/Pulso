@@ -5,6 +5,12 @@ const {
 } = require('electron');
 const settings = require('./settings');
 const icons = require('./icons');
+const updater = require('./updater');
+
+// Hardware-accelerated rendering and smooth scrolling for fluid animations.
+for (const flag of ['enable-smooth-scrolling', 'enable-gpu-rasterization', 'enable-zero-copy', 'ignore-gpu-blocklist']) {
+  app.commandLine.appendSwitch(flag);
+}
 
 const WHATSAPP_URL = 'https://web.whatsapp.com/';
 const WHATSAPP_ORIGIN = 'https://web.whatsapp.com';
@@ -17,6 +23,9 @@ const ALLOWED_PERMISSIONS = new Set([
   'notifications', 'media', 'mediaKeySystem', 'clipboard-read',
   'clipboard-sanitized-write', 'fullscreen', 'display-capture',
 ]);
+// Links that try to send the user to install another WhatsApp app.
+const PROMO_LINK =
+  /whatsapp\.com\/download|apps\.microsoft\.com|get\.microsoft\.com|ms-windows-store:|apps\.apple\.com|play\.google\.com/i;
 
 let win;
 let tray;
@@ -53,6 +62,7 @@ function start() {
   createTray();
   buildMenu();
   applyLaunchAtLogin();
+  updater.init(win, () => { quitting = true; });
 }
 
 function isWhatsApp(url) {
@@ -64,6 +74,7 @@ function isWhatsApp(url) {
 }
 
 function openExternal(url) {
+  if (PROMO_LINK.test(url)) return;
   try {
     if (['http:', 'https:', 'mailto:', 'tel:'].includes(new URL(url).protocol)) {
       shell.openExternal(url);
@@ -98,7 +109,7 @@ function createWindow() {
   if (settings.get('maximized')) win.maximize();
   const hidden = process.argv.includes('--hidden') || settings.get('startMinimized');
   win.once('ready-to-show', () => {
-    if (!hidden) win.show();
+    if (!hidden) showWindow();
   });
 
   const wc = win.webContents;
@@ -130,7 +141,7 @@ function createWindow() {
     saveBounds();
     if (!quitting && settings.get('closeToTray')) {
       event.preventDefault();
-      win.hide();
+      hideWindow();
     }
   });
   win.on('focus', () => win.flashFrame(false));
@@ -142,15 +153,43 @@ function saveBounds() {
   if (!win.isMaximized() && !win.isMinimized()) settings.set('bounds', win.getBounds());
 }
 
+// Eases the window opacity so showing and hiding from the tray feels smooth.
+let fadeTimer;
+function fade(from, to, ms, done) {
+  clearInterval(fadeTimer);
+  const start = Date.now();
+  win.setOpacity(from);
+  fadeTimer = setInterval(() => {
+    const t = Math.min(1, (Date.now() - start) / ms);
+    const eased = 1 - Math.pow(1 - t, 3);
+    win.setOpacity(from + (to - from) * eased);
+    if (t === 1) {
+      clearInterval(fadeTimer);
+      if (done) done();
+    }
+  }, 1000 / 120);
+}
+
 function showWindow() {
   if (!win) return;
   if (win.isMinimized()) win.restore();
+  const wasVisible = win.isVisible();
+  if (!wasVisible) win.setOpacity(0);
   win.show();
   win.focus();
+  if (!wasVisible) fade(0, 1, 180);
+}
+
+function hideWindow() {
+  if (!win.isVisible()) return;
+  fade(win.getOpacity(), 0, 140, () => {
+    win.hide();
+    win.setOpacity(1);
+  });
 }
 
 function toggleWindow() {
-  if (win.isVisible() && win.isFocused()) win.hide();
+  if (win.isVisible() && win.isFocused()) hideWindow();
   else showWindow();
 }
 
@@ -196,6 +235,7 @@ function createTray() {
     { label: 'Mostrar Whatsdesk', click: showWindow },
     { type: 'separator' },
     { label: 'Recargar', click: () => win.webContents.reload() },
+    { label: 'Buscar actualizaciones…', click: () => updater.check(true) },
     { type: 'separator' },
     { label: 'Salir', click: quit },
   ]));
@@ -247,7 +287,7 @@ function buildMenu() {
       label: 'Archivo',
       submenu: [
         { label: 'Recargar', accelerator: 'CmdOrCtrl+R', click: () => win.webContents.reload() },
-        { label: 'Ocultar en la bandeja', accelerator: 'CmdOrCtrl+W', click: () => win.hide() },
+        { label: 'Ocultar en la bandeja', accelerator: 'CmdOrCtrl+W', click: hideWindow },
         { type: 'separator' },
         { label: 'Borrar caché y recargar', click: clearCache },
         { label: 'Cerrar sesión y borrar datos', click: resetSession },
@@ -276,8 +316,10 @@ function buildMenu() {
       ],
     },
     {
-      label: 'Opciones',
+      label: 'Ajustes',
       submenu: [
+        { label: 'Buscar actualizaciones…', click: () => updater.check(true) },
+        { type: 'separator' },
         toggleSetting('Cerrar a la bandeja del sistema', 'closeToTray'),
         toggleSetting('Iniciar con Windows', 'launchAtLogin', applyLaunchAtLogin),
         toggleSetting('Iniciar minimizado', 'startMinimized'),

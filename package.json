@@ -1,14 +1,15 @@
 {
   "name": "whatsdesk-windows",
   "productName": "Whatsdesk",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Cliente de escritorio no oficial para WhatsApp Web en Windows",
   "main": "src/main.js",
   "license": "GPL-3.0-or-later",
   "author": "Whatsdesk",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis portable",
+    "dist": "electron-builder --win nsis portable --publish never",
+    "release": "powershell -ExecutionPolicy Bypass -File scripts/release.ps1",
     "pack": "electron-builder --win dir"
   },
   "devDependencies": {
@@ -18,19 +19,42 @@
   "build": {
     "appId": "com.whatsdesk.windows",
     "productName": "Whatsdesk",
-    "directories": { "output": "dist" },
-    "files": ["src/**/*", "assets/**/*", "package.json"],
+    "directories": {
+      "output": "dist"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "devecchianderson12-web",
+        "repo": "Pulso",
+        "releaseType": "release"
+      }
+    ],
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
     "win": {
       "icon": "assets/icon.png",
-      "target": ["nsis", "portable"]
+      "target": [
+        "nsis",
+        "portable"
+      ]
     },
     "nsis": {
+      "artifactName": "Whatsdesk-Setup-${version}.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Whatsdesk"
     },
-    "portable": { "artifactName": "Whatsdesk-Portable-${version}.exe" }
+    "portable": {
+      "artifactName": "Whatsdesk-Portable-${version}.exe"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
   }
 }
