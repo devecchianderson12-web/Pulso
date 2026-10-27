@@ -161,10 +161,16 @@
   }
 
   // Marks the QR login screen (QR canvas present, no chat list) for the Pulso login styles.
+  let wasLogin = null;
   function markLogin() {
     const canvas = document.querySelector('canvas');
     const login = Boolean(canvas) && !document.getElementById('side');
     document.documentElement.classList.toggle('pulso-login', login);
+    if (login !== wasLogin) {
+      wasLogin = login;
+      // The chat list moves in after logging in: re-anchor the banner over it.
+      placeBanner();
+    }
     if (!login) return;
     if (!canvas.parentElement.hasAttribute('data-pulso-qr')) canvas.parentElement.setAttribute('data-pulso-qr', '');
     let card = canvas.parentElement.parentElement;
@@ -264,9 +270,9 @@
   // Sits over the bottom of the chat list (#side), or centered when there is none (login screen).
   function placeBanner() {
     if (!banner) return;
-    const side = document.getElementById('side');
+    const side = document.getElementById('side') || document.getElementById('pane-side');
     const r = side && side.getBoundingClientRect();
-    if (r && r.width > 0) {
+    if (r && r.width > 120 && r.width < innerWidth * 0.75) {
       const width = Math.min(340, r.width - 24);
       banner.style.width = `${width}px`;
       banner.style.left = `${Math.round(r.left + (r.width - width) / 2)}px`;
@@ -283,7 +289,7 @@
     if (s.kind === 'hidden') { b.classList.remove('on'); return; }
     placeBanner();
     b.classList.toggle('busy', s.kind !== 'available');
-    b.querySelector('.t').textContent = s.kind === 'available' ? 'Hay una actualización'
+    b.querySelector('.t').textContent = s.kind === 'available' ? 'Hay una actualización disponible'
       : s.kind === 'progress' ? 'Descargando actualización…' : 'Instalando…';
     b.querySelector('.s').textContent = s.kind === 'available'
       ? `Pulso ${s.version} · tienes la ${s.current}`
@@ -307,6 +313,19 @@
     document.head.appendChild(themeStyle);
     updateTheme();
     window.addEventListener('load', updateTheme, { once: true });
+    // WhatsApp adds theme rules with insertRule (no new <style> node to observe), notably
+    // after logging in. Counting rules is cheap; the full scan only runs when it changes.
+    let ruleCount = -1;
+    setInterval(() => {
+      let n = 0;
+      for (const sheet of document.styleSheets) {
+        try { n += sheet.cssRules.length; } catch { /* cross-origin */ }
+      }
+      if (n !== ruleCount) {
+        ruleCount = n;
+        updateTheme();
+      }
+    }, 3000);
     scan(document.body);
     markLogin();
     // An update found before the page finished loading.
