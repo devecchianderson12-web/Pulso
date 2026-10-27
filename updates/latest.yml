@@ -1,0 +1,8 @@
+version: 1.4.0
+files:
+  - url: https://github.com/devecchianderson12-web/Pulso/releases/download/v1.4.0/Pulso-Setup-1.4.0.exe
+    sha512: ne1a7ZAd5ZYLMKzk+eNOc17HSeTX6OIzaS3RH2g0XSyeTPcJH9zcSYDEvBYO4CNYQWlRX6OG0BW8NmviAOCxvA==
+    size: 114514587
+path: https://github.com/devecchianderson12-web/Pulso/releases/download/v1.4.0/Pulso-Setup-1.4.0.exe
+sha512: ne1a7ZAd5ZYLMKzk+eNOc17HSeTX6OIzaS3RH2g0XSyeTPcJH9zcSYDEvBYO4CNYQWlRX6OG0BW8NmviAOCxvA==
+releaseDate: '2026-10-27T21:57:26.729Z'
