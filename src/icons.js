@@ -1,5 +1,6 @@
-// Generates the app, tray and badge icons at runtime as PNG buffers,
-// so the project ships no binary image assets.
+// Draws Pulso's icons as vector shapes (signed distance fields), rendered at each exact pixel
+// size with analytic anti-aliasing, so edges stay smooth at 16 px and at 256 px alike.
+const path = require('path');
 const zlib = require('zlib');
 
 const CRC_TABLE = new Int32Array(256).map((_, n) => {
@@ -26,7 +27,6 @@ function chunk(type, data) {
 function encodePng(size, rgba) {
   const raw = Buffer.alloc(size * (size * 4 + 1));
   for (let y = 0; y < size; y++) {
-    raw[y * (size * 4 + 1)] = 0;
     rgba.copy(raw, y * (size * 4 + 1) + 1, y * size * 4, (y + 1) * size * 4);
   }
   const ihdr = Buffer.alloc(13);
@@ -37,124 +37,189 @@ function encodePng(size, rgba) {
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', ihdr),
-    chunk('IDAT', zlib.deflateSync(raw)),
+    chunk('IDAT', zlib.deflateSync(raw, { level: 9 })),
     chunk('IEND', Buffer.alloc(0)),
   ]);
 }
 
-// Draws by sampling a coverage function (4x4 supersampling for smooth edges).
-function render(size, shader) {
+// ---------- Shapes (unit square, y down). Each returns the signed distance to its edge. ----------
+
+function segDist(px, py, [ax, ay], [bx, by]) {
+  const vx = bx - ax, vy = by - ay;
+  const t = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy)));
+  return Math.hypot(px - (ax + vx * t), py - (ay + vy * t));
+}
+
+// Stroked polyline with round caps and joins.
+function stroke(points, width) {
+  return (x, y) => {
+    let d = Infinity;
+    for (let i = 0; i < points.length - 1; i++) d = Math.min(d, segDist(x, y, points[i], points[i + 1]));
+    return d - width / 2;
+  };
+}
+
+const C = [0.535, 0.465];
+const RING = 0.355;
+const ringPoint = (deg) => [C[0] + RING * Math.cos(deg * Math.PI / 180), C[1] + RING * Math.sin(deg * Math.PI / 180)];
+// The ring opens between these angles, where the speech tail joins it.
+const GAP_FROM = 110;
+const GAP_TO = 142;
+const TAIL = [ringPoint(GAP_TO), [0.105, 0.925], ringPoint(GAP_FROM)];
+const PULSE = [[0.3, 0.48], [0.405, 0.48], [0.462, 0.325], [0.545, 0.635], [0.602, 0.44], [0.642, 0.505], [0.77, 0.505]];
+
+function markShape(weight) {
+  const w = 0.088 * weight;
+  const tail = stroke(TAIL, w);
+  const line = stroke(PULSE, 0.072 * weight);
+  return (x, y) => {
+    const ang = (Math.atan2(y - C[1], x - C[0]) * 180) / Math.PI;
+    const ring = ang > GAP_FROM && ang < GAP_TO
+      ? Infinity
+      : Math.abs(Math.hypot(x - C[0], y - C[1]) - RING) - w / 2;
+    return Math.min(ring, tail(x, y), line(x, y));
+  };
+}
+
+// Pulse-green gradient from top-left to bottom-right.
+function markColor(x, y) {
+  const t = Math.max(0, Math.min(1, (x + y) / 2));
+  return [44 - 28 * t, 235 - 53 * t, 154 - 39 * t];
+}
+
+// Digits as strokes in a 0.6 x 1 box.
+const DIGITS = {
+  0: [[[0, 0], [0.6, 0], [0.6, 1], [0, 1], [0, 0]]],
+  1: [[[0.12, 0.2], [0.34, 0], [0.34, 1]]],
+  2: [[[0, 0], [0.6, 0], [0.6, 0.5], [0, 0.5], [0, 1], [0.6, 1]]],
+  3: [[[0, 0], [0.6, 0], [0.6, 1], [0, 1]], [[0.06, 0.5], [0.6, 0.5]]],
+  4: [[[0, 0], [0, 0.55], [0.6, 0.55]], [[0.6, 0], [0.6, 1]]],
+  5: [[[0.6, 0], [0, 0], [0, 0.5], [0.6, 0.5], [0.6, 1], [0, 1]]],
+  6: [[[0.6, 0], [0, 0], [0, 1], [0.6, 1], [0.6, 0.5], [0, 0.5]]],
+  7: [[[0, 0], [0.6, 0], [0.25, 1]]],
+  8: [[[0, 0], [0.6, 0], [0.6, 1], [0, 1], [0, 0]], [[0, 0.5], [0.6, 0.5]]],
+  9: [[[0.6, 0.5], [0, 0.5], [0, 0], [0.6, 0], [0.6, 1], [0, 1]]],
+  '+': [[[0.3, 0.12], [0.3, 0.88]], [[-0.08, 0.5], [0.68, 0.5]]],
+};
+
+// Text centered at (cx, cy) with the given height, as one distance function.
+function textShape(text, cx, cy, h) {
+  const gap = 0.35;
+  const width = (text.length * 0.6 + (text.length - 1) * gap) * h;
+  const strokes = [];
+  [...text].forEach((ch, i) => {
+    const ox = cx - width / 2 + i * (0.6 + gap) * h;
+    for (const line of DIGITS[ch]) {
+      strokes.push(stroke(line.map(([px, py]) => [ox + px * h, cy - h / 2 + py * h]), h * 0.2));
+    }
+  });
+  return (x, y) => Math.min(...strokes.map((s) => s(x, y)));
+}
+
+const circle = (cx, cy, r) => (x, y) => Math.hypot(x - cx, y - cy) - r;
+
+// ---------- Rendering ----------
+
+// Layers are drawn bottom to top: { shape, color: [r,g,b] | (x,y)=>[r,g,b], erase? }.
+function render(size, layers) {
   const px = Buffer.alloc(size * size * 4);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
+  const aa = 1 / size;
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      const x = (i + 0.5) / size, y = (j + 0.5) / size;
       let r = 0, g = 0, b = 0, a = 0;
-      for (let sy = 0; sy < 4; sy++) {
-        for (let sx = 0; sx < 4; sx++) {
-          const c = shader((x + (sx + 0.5) / 4) / size, (y + (sy + 0.5) / 4) / size);
-          if (c) { r += c[0] * c[3]; g += c[1] * c[3]; b += c[2] * c[3]; a += c[3]; }
-        }
+      for (const layer of layers) {
+        const cov = Math.max(0, Math.min(1, 0.5 - layer.shape(x, y) / aa));
+        if (cov <= 0) continue;
+        if (layer.erase) { r *= 1 - cov; g *= 1 - cov; b *= 1 - cov; a *= 1 - cov; continue; }
+        const [cr, cg, cb] = typeof layer.color === 'function' ? layer.color(x, y) : layer.color;
+        r = cr * cov + r * (1 - cov); g = cg * cov + g * (1 - cov); b = cb * cov + b * (1 - cov);
+        a = cov + a * (1 - cov);
       }
-      const i = (y * size + x) * 4;
+      const k = (j * size + i) * 4;
       if (a > 0) {
-        px[i] = r / a; px[i + 1] = g / a; px[i + 2] = b / a; px[i + 3] = (a / 16) * 255;
+        px[k] = Math.round(r / a); px[k + 1] = Math.round(g / a); px[k + 2] = Math.round(b / a);
+        px[k + 3] = Math.round(a * 255);
       }
     }
   }
-  return px;
+  return encodePng(size, px);
 }
 
-const GREEN = [18, 140, 126, 1];
-const WHITE = [255, 255, 255, 1];
-const RED = [229, 57, 53, 1];
+// Thicker strokes at small sizes keep the mark legible.
+const weightFor = (size) => (size <= 20 ? 1.35 : size <= 32 ? 1.18 : 1);
 
-// 3x5 bitmap digits used for the unread counter.
-const DIGITS = {
-  0: ['111', '101', '101', '101', '111'], 1: ['010', '110', '010', '010', '111'],
-  2: ['111', '001', '111', '100', '111'], 3: ['111', '001', '111', '001', '111'],
-  4: ['101', '101', '111', '001', '001'], 5: ['111', '100', '111', '001', '111'],
-  6: ['111', '100', '111', '101', '111'], 7: ['111', '001', '001', '001', '001'],
-  8: ['111', '101', '111', '101', '111'], 9: ['111', '101', '111', '001', '111'],
-  '+': ['000', '010', '111', '010', '000'],
-};
-
-function textHit(text, u, v, cx, cy, h) {
-  const cell = h / 5;
-  const w = text.length * 3 * cell + (text.length - 1) * cell;
-  const x0 = cx - w / 2, y0 = cy - h / 2;
-  if (v < y0 || v >= y0 + h || u < x0 || u >= x0 + w) return false;
-  const col = Math.floor((u - x0) / cell);
-  const ch = Math.floor(col / 4), cc = col % 4;
-  if (cc === 3) return false;
-  const row = Math.floor((v - y0) / cell);
-  return DIGITS[text[ch]][row][cc] === '1';
+function markPng(size) {
+  return render(size, [{ shape: markShape(weightFor(size)), color: markColor }]);
 }
 
-function segDist(px, py, ax, ay, bx, by) {
-  const vx = bx - ax, vy = by - ay;
-  const t = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy)));
-  const dx = px - (ax + vx * t), dy = py - (ay + vy * t);
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function inTriangle(px, py, [ax, ay], [bx, by], [cx, cy]) {
-  const s = (x1, y1, x2, y2, x3, y3) => (x1 - x3) * (y2 - y3) - (x2 - x3) * (y1 - y3);
-  const d1 = s(px, py, ax, ay, bx, by), d2 = s(px, py, bx, by, cx, cy), d3 = s(px, py, cx, cy, ax, ay);
-  return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
-}
-
-const PULSE = [[0.27, 0.5], [0.39, 0.5], [0.45, 0.35], [0.53, 0.65], [0.59, 0.47], [0.63, 0.53], [0.73, 0.53]];
-
-// Pulso mark: outlined speech bubble with a heartbeat line, in a green gradient.
-// `bold` thickens the strokes so the mark stays legible at tray sizes.
-function pulseMark(u, v, bold = 1) {
-  const cx = 0.53, cy = 0.47, R = 0.41, ring = 0.085 * bold;
-  const d = Math.hypot(u - cx, v - cy);
-  const tail = inTriangle(u, v, [0.2, 0.62], [0.36, 0.8], [0.1, 0.93]);
-  const tailHole = inTriangle(u, v, [0.24, 0.66], [0.31, 0.74], [0.19, 0.82]) && d > R - ring;
-  const onRing = d <= R && d >= R - ring;
-  let line = false;
-  for (let i = 0; i < PULSE.length - 1; i++) {
-    const [ax, ay] = PULSE[i], [bx, by] = PULSE[i + 1];
-    if (segDist(u, v, ax, ay, bx, by) <= 0.034 * bold) { line = true; break; }
-  }
-  if (!(onRing || (tail && !tailHole && d > R - ring) || line)) return null;
-  const t = Math.max(0, Math.min(1, (u + v) / 2));
-  return [Math.round(40 - 22 * t), Math.round(232 - 50 * t), Math.round(150 - 30 * t), 1];
-}
-
-const bubble = (u, v) => pulseMark(u, v, 1.35);
-
-function appIcon(size = 256) {
-  return encodePng(size, render(size, (u, v) => pulseMark(u, v, size < 64 ? 1.35 : 1)));
-}
+const RED = [229, 57, 53];
+const WHITE = [255, 255, 255];
 
 function badgeLabel(count) {
   return count > 99 ? '99+' : String(count);
 }
 
-// Tray icon: bubble plus a red counter in the lower-right corner.
-function trayIcon(count, size = 32) {
+// Mark with a red counter in the lower-right corner, cut out from the mark behind it.
+function trayPng(size, count) {
+  if (!count) return markPng(size);
   const label = count > 9 ? '+' : String(count);
-  return encodePng(size, render(size, (u, v) => {
-    if (count > 0) {
-      const dx = u - 0.7, dy = v - 0.7;
-      if (dx * dx + dy * dy <= 0.3 * 0.3) {
-        return textHit(label, u, v, 0.7, 0.7, 0.32) ? WHITE : RED;
-      }
-    }
-    return bubble(u, v);
-  }));
+  return render(size, [
+    { shape: markShape(weightFor(size)), color: markColor },
+    { shape: circle(0.72, 0.72, 0.335), erase: true },
+    { shape: circle(0.72, 0.72, 0.28), color: RED },
+    { shape: textShape(label, 0.72, 0.72, 0.3), color: WHITE },
+  ]);
 }
 
 // Taskbar overlay: red circle with the count.
-function overlayIcon(count, size = 32) {
+function overlayPng(size, count) {
   const label = badgeLabel(count);
-  const h = label.length > 2 ? 0.3 : 0.45;
-  return encodePng(size, render(size, (u, v) => {
-    const dx = u - 0.5, dy = v - 0.5;
-    if (dx * dx + dy * dy > 0.5 * 0.5) return null;
-    return textHit(label, u, v, 0.5, 0.5, h) ? WHITE : RED;
-  }));
+  const h = label.length > 2 ? 0.26 : label.length > 1 ? 0.4 : 0.5;
+  return render(size, [
+    { shape: circle(0.5, 0.5, 0.48), color: RED },
+    { shape: textShape(label, 0.5, 0.5, h), color: WHITE },
+  ]);
 }
 
-module.exports = { appIcon, trayIcon, overlayIcon, badgeLabel };
+// Windows icon (.ico) holding a PNG per size, so Windows never has to rescale.
+function icoBuffer(sizes) {
+  const images = sizes.map((s) => markPng(s));
+  const header = Buffer.alloc(6 + 16 * sizes.length);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(sizes.length, 4);
+  let offset = header.length;
+  sizes.forEach((s, i) => {
+    const e = 6 + i * 16;
+    header[e] = s >= 256 ? 0 : s;
+    header[e + 1] = s >= 256 ? 0 : s;
+    header.writeUInt16LE(1, e + 4);  // planes
+    header.writeUInt16LE(32, e + 6); // bits per pixel
+    header.writeUInt32LE(images[i].length, e + 8);
+    header.writeUInt32LE(offset, e + 12);
+    offset += images[i].length;
+  });
+  return Buffer.concat([header, ...images]);
+}
+
+// One native image with a representation per DPI scale, for 16-px tray and overlay icons.
+const SCALES = [1, 1.25, 1.5, 2, 2.5, 3];
+function multiScale(draw) {
+  const { nativeImage } = require('electron');
+  const img = nativeImage.createEmpty();
+  for (const scaleFactor of SCALES) img.addRepresentation({ scaleFactor, buffer: draw(Math.round(16 * scaleFactor)) });
+  return img;
+}
+
+const trayIcon = (count) => multiScale((s) => trayPng(s, count));
+const overlayIcon = (count) => multiScale((s) => overlayPng(s, count));
+
+function windowIcon() {
+  const { nativeImage } = require('electron');
+  return nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'icon.ico'));
+}
+
+const ICO_SIZES = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256];
+
+module.exports = { markPng, icoBuffer, ICO_SIZES, trayIcon, overlayIcon, windowIcon, badgeLabel, trayPng, overlayPng };

@@ -9,7 +9,7 @@ const {
 // login session and settings over so updating doesn't require scanning the QR again.
 const legacyData = path.join(app.getPath('appData'), 'Whatsdesk');
 const dataDir = path.join(app.getPath('appData'), 'Pulso');
-if (!fs.existsSync(dataDir) && fs.existsSync(legacyData)) {
+if (app.isPackaged && !fs.existsSync(dataDir) && fs.existsSync(legacyData)) {
   try {
     fs.renameSync(legacyData, dataDir);
   } catch {
@@ -20,11 +20,9 @@ if (!fs.existsSync(dataDir) && fs.existsSync(legacyData)) {
 const settings = require('./settings');
 const icons = require('./icons');
 const updater = require('./updater');
+const gpu = require('./gpu');
 
-// Hardware-accelerated rendering and smooth scrolling for fluid animations.
-for (const flag of ['enable-smooth-scrolling', 'enable-gpu-rasterization', 'enable-zero-copy', 'ignore-gpu-blocklist']) {
-  app.commandLine.appendSwitch(flag);
-}
+gpu.setup();
 
 const APP_NAME = 'Pulso';
 const TITLE_BAR_HEIGHT = 40;
@@ -111,7 +109,7 @@ function createWindow() {
     minWidth: 640,
     minHeight: 480,
     title: APP_NAME,
-    icon: nativeImage.createFromBuffer(icons.appIcon()),
+    icon: icons.windowIcon(),
     backgroundColor: BG,
     show: false,
     titleBarStyle: 'hidden',
@@ -123,6 +121,7 @@ function createWindow() {
     },
   });
   win.loadFile(path.join(__dirname, 'shell.html'));
+  win.webContents.once('did-finish-load', () => gpu.loaded());
 
   const view = new WebContentsView({
     webPreferences: {
@@ -171,6 +170,7 @@ function createWindow() {
     const match = /^\((\d+)\)/.exec(title);
     setUnread(match ? Number(match[1]) : 0);
   });
+  wa.once('did-finish-load', () => setTimeout(measureGraphics, 2500));
   wa.on('context-menu', (event, params) => showContextMenu(params));
   wa.on('render-process-gone', (event, details) => {
     if (details.reason !== 'clean-exit') wa.reload();
@@ -202,6 +202,39 @@ function createWindow() {
     win.flashFrame(false);
     wa.focus();
   });
+}
+
+// First run only: measures real fps inside WhatsApp Web while the title bar animates, and lets
+// gpu.js try another graphics mode (restarting Pulso) until one is smooth.
+let measuring = false;
+async function measureGraphics() {
+  if (measuring || gpu.state().done) return;
+  // Only measured with Pulso in the foreground; checks again until it is.
+  if (!win.isVisible() || !win.isFocused()) {
+    setTimeout(measureGraphics, 2000);
+    return;
+  }
+  measuring = true;
+  win.webContents.send('shell:toast', 'Optimizando gráficos… (solo la primera vez)', 3200);
+  let fps = NaN;
+  try {
+    fps = await wa.executeJavaScript(`new Promise((resolve) => {
+      const dts = []; let last = performance.now(); const t0 = last;
+      const tick = (t) => { dts.push(t - last); last = t;
+        if (t - t0 < 2800) requestAnimationFrame(tick);
+        else { dts.shift(); dts.sort((a, b) => a - b); resolve(1000 / (dts[Math.floor(dts.length * .75)] || 16.7)); } };
+      requestAnimationFrame(tick);
+    })`);
+  } catch { /* page navigated away; try again next launch */ }
+  measuring = false;
+  // Another app took the foreground: the measurement doesn't count.
+  if (!win.isFocused()) {
+    setTimeout(measureGraphics, 2000);
+    return;
+  }
+  const r = gpu.report(fps, () => { quitting = true; });
+  if (r.action === 'restart') win.webContents.send('shell:toast', 'Probando otro modo gráfico… Pulso se reinicia solo', 4000);
+  else if (r.action === 'done') win.webContents.send('shell:toast', `Gráficos listos: ${Math.round(r.fps)} fps`, 3000);
 }
 
 function toggleFullScreen() {
@@ -269,10 +302,10 @@ function setUnread(count) {
   if (count === unread) return;
   const grew = count > unread;
   unread = count;
-  tray.setImage(nativeImage.createFromBuffer(icons.trayIcon(count)));
+  tray.setImage(icons.trayIcon(count));
   tray.setToolTip(count ? `${APP_NAME} — ${count} sin leer` : APP_NAME);
   win.setOverlayIcon(
-    count ? nativeImage.createFromBuffer(icons.overlayIcon(count)) : null,
+    count ? icons.overlayIcon(count) : null,
     count ? `${count} mensajes sin leer` : '',
   );
   win.setTitle(count ? `(${icons.badgeLabel(count)}) ${APP_NAME}` : APP_NAME);
@@ -295,7 +328,7 @@ ipcMain.on('shell:menu', (event, x, y) => {
 ipcMain.handle('shell:info', () => ({ version: app.getVersion(), unread }));
 
 function createTray() {
-  tray = new Tray(nativeImage.createFromBuffer(icons.trayIcon(0)));
+  tray = new Tray(icons.trayIcon(0));
   tray.setToolTip(APP_NAME);
   tray.on('click', toggleWindow);
   tray.setContextMenu(Menu.buildFromTemplate([
@@ -394,6 +427,11 @@ function buildMenu() {
         toggleSetting('Parpadear en la barra de tareas', 'flashOnMessage'),
         { type: 'separator' },
         { label: 'Corrector ortográfico', submenu: spellMenu() },
+        { type: 'separator' },
+        {
+          label: `Optimizar gráficos (ahora: ${gpu.state().label})`,
+          click: () => gpu.retune(() => { quitting = true; }),
+        },
       ],
     },
     {
@@ -445,8 +483,19 @@ function showAbout() {
     detail:
       'Tu WhatsApp, en tu estilo. Cliente de escritorio no oficial para Windows que ejecuta WhatsApp Web.\n' +
       'No está afiliado a WhatsApp ni a Meta.\n' +
-      `Electron ${process.versions.electron} · Chromium ${process.versions.chrome}`,
+      `Electron ${process.versions.electron} · Chromium ${process.versions.chrome}\n` +
+      `Gráficos: ${graphicsSummary()}`,
   });
+}
+
+function graphicsSummary() {
+  const s = gpu.state();
+  let status = '';
+  try {
+    const g = app.getGPUFeatureStatus();
+    status = ` · compositing ${g.gpu_compositing} · raster ${g.rasterization}`;
+  } catch { /* not available */ }
+  return `${s.label}${s.fps ? ` (${s.fps} fps)` : ''}${status}`;
 }
 
 function showContextMenu(params) {
@@ -497,7 +546,7 @@ function onDownload(event, item) {
     const note = new Notification({
       title: 'Descarga completada',
       body: path.basename(file),
-      icon: nativeImage.createFromBuffer(icons.appIcon(64)),
+      icon: icons.windowIcon(),
     });
     note.on('click', () => shell.showItemInFolder(file));
     note.show();

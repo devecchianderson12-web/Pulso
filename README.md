@@ -16,6 +16,9 @@ día. Encima le añade integración con Windows y un diseño propio. No está af
 
 - **Diseño Pulso:** tema oscuro verde, barra de título propia con el logo y contador de no leídos,
   chats redondeados y transiciones suaves.
+- **Gráficos optimizados para tu PC:** en el primer arranque Pulso mide los fps reales y, si no
+  va fluido, prueba otros modos gráficos (GPU integrada, OpenGL, GPU dedicada, sin GPU) y se
+  queda con el mejor. Se puede repetir en **☰ → Ajustes → Optimizar gráficos**.
 - **Todo WhatsApp Web:** chats, grupos, comunidades, canales, estados, archivos, notas de voz,
   stickers, encuestas, búsqueda y archivados.
 - Notificaciones nativas de Windows. Al hacer clic se abre el chat.
@@ -42,6 +45,13 @@ del sistema).
 ```bash
 npm install
 npm start
+```
+
+El icono se dibuja con formas vectoriales en `src/icons.js`. Tras cambiarlo, regenera
+`assets/icon.ico` (todos los tamaños de Windows) y `assets/icon.png` con:
+
+```bash
+node scripts/make-icons.js
 ```
 
 ## Publicar una versión nueva

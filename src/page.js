@@ -32,7 +32,10 @@
       --splashscreen-startup-background-rgb: 11, 16, 15 !important;
       --splashscreen-progress-primary: #1fdf8a !important;
     }
-    body.dark, body.dark * {
+  `;
+
+  // Applied only where WhatsApp defines its theme (found below), not on every element.
+  const THEME_VARS = `
       --WDS-accent: #1fdf8a !important;
       --WDS-accent-RGB: 31, 223, 138 !important;
       --WDS-accent-deemphasized: #10392a !important;
@@ -59,7 +62,9 @@
       --WDS-systems-chat-surface-tray: #0e1413 !important;
       --WDS-surface-highlight: rgba(31, 223, 138, .08) !important;
       --WDS-surface-pressed: rgba(31, 223, 138, .16) !important;
-    }
+  `;
+
+  style.textContent += `
     body.dark #pane-side [role="listitem"], body.dark #pane-side [role="row"] { border-radius: 14px; }
 
     /* Login screen: WhatsApp paints it with fixed light colors, so restyle it here. */
@@ -84,6 +89,34 @@
     body.dark ::-webkit-scrollbar-thumb { background-color: rgba(31, 223, 138, .18) !important; border-radius: 99px; }
     body.dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(31, 223, 138, .32) !important; }
   `;
+
+  // WhatsApp defines its colors on a few theme classes. Find those rules and override the
+  // variables right there, so every other element simply inherits them.
+  const themeStyle = document.createElement('style');
+  let themeKey = null;
+  function updateTheme() {
+    const selectors = new Set();
+    for (const sheet of document.styleSheets) {
+      let rules;
+      try { rules = sheet.cssRules; } catch { continue; }
+      const walk = (list) => {
+        for (const r of list) {
+          if (r.cssRules && r.cssRules.length) walk(r.cssRules);
+          if (r.style && r.selectorText && r.style.getPropertyValue('--WDS-accent')) {
+            for (const s of r.selectorText.split(',')) {
+              if (!s.includes(':root') && !s.includes('::')) selectors.add(s.trim());
+            }
+          }
+        }
+      };
+      walk(rules);
+    }
+    const list = [...selectors].join(', ');
+    if (list === themeKey) return;
+    themeKey = list;
+    const roots = list ? `body.dark, body.dark :is(${list})` : 'body.dark, body.dark *';
+    themeStyle.textContent = `${roots} {${THEME_VARS}}`;
+  }
 
   function isPromo(text) {
     const t = text.trim();
@@ -137,8 +170,21 @@
 
   let pending = [];
   let scheduled = false;
+  let sheetsChanged = false;
+  // Messages are where most DOM changes happen while scrolling; promos never appear there.
+  const SKIP = '[data-id], #main [role="application"]';
   const observer = new MutationObserver((mutations) => {
-    for (const m of mutations) for (const node of m.addedNodes) pending.push(node);
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node.nodeName === 'STYLE' || node.nodeName === 'LINK') {
+          sheetsChanged = true;
+          if (node.nodeName === 'LINK') node.addEventListener('load', updateTheme, { once: true });
+        } else {
+          const el = node.nodeType === 1 ? node : node.parentElement;
+          if (el && !el.closest(SKIP)) pending.push(el);
+        }
+      }
+    }
     if (scheduled) return;
     scheduled = true;
     // Batch work into idle time so scanning never competes with animations.
@@ -146,16 +192,23 @@
       const batch = pending;
       pending = [];
       scheduled = false;
-      for (const node of batch) if (node.isConnected) scan(node.nodeType === 3 ? node.parentElement : node);
+      for (const node of batch) if (node.isConnected) scan(node);
+      if (sheetsChanged) {
+        sheetsChanged = false;
+        updateTheme();
+      }
       markLogin();
     }, { timeout: 500 });
   });
 
   function start() {
     document.head.appendChild(style);
+    document.head.appendChild(themeStyle);
+    updateTheme();
+    window.addEventListener('load', updateTheme, { once: true });
     scan(document.body);
     markLogin();
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
   }
 
   if (document.body) start();
