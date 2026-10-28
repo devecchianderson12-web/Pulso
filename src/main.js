@@ -342,6 +342,8 @@ function createTray() {
     { type: 'separator' },
     { label: 'Recargar', click: () => wa.reload() },
     { label: 'Buscar actualizaciones…', click: () => updater.check(true) },
+    // Reachable even when the window shows nothing.
+    { label: 'Restablecer gráficos', click: () => gpu.retune(() => { quitting = true; }) },
     { type: 'separator' },
     { label: 'Salir', click: quit },
   ]));

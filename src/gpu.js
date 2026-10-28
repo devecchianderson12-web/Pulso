@@ -12,8 +12,9 @@ const MODES = [
   { id: 'soft', label: 'Sin GPU', soft: true },                           // last resort
 ];
 // Bump to measure again on every install (e.g. after changing the switches below).
-// 2: software-emulated GPUs now count as failed, so PCs tuned with 1.3.0 measure again.
-const TUNE_VERSION = 2;
+// 2: software-emulated GPUs now count as failed.
+// 3: 1.4.0/1.4.1 (Electron 44) measured modes whose window never reached the screen; measure again.
+const TUNE_VERSION = 3;
 
 let tune;
 let mode;
@@ -54,6 +55,7 @@ function setup() {
     if (mode.sw) app.commandLine.appendSwitch(...mode.sw);
     // Draw on the GPU inside the main process. As a separate process, NVIDIA's driver treats it
     // as a background app and caps it (20 fps) when "background application max frame rate" is on.
+    // Electron 38+ never presents the window to the screen with this switch: stay on Electron 37.
     app.commandLine.appendSwitch('in-process-gpu');
   }
   app.commandLine.appendSwitch('disable-renderer-backgrounding');
