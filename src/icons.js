@@ -182,44 +182,25 @@ function overlayPng(size, count) {
   ]);
 }
 
-// Windows icon (.ico) holding a PNG per size, so Windows never has to rescale.
-function icoBuffer(sizes) {
-  const images = sizes.map((s) => markPng(s));
-  const header = Buffer.alloc(6 + 16 * sizes.length);
-  header.writeUInt16LE(0, 0);
-  header.writeUInt16LE(1, 2);
-  header.writeUInt16LE(sizes.length, 4);
-  let offset = header.length;
-  sizes.forEach((s, i) => {
-    const e = 6 + i * 16;
-    header[e] = s >= 256 ? 0 : s;
-    header[e + 1] = s >= 256 ? 0 : s;
-    header.writeUInt16LE(1, e + 4);  // planes
-    header.writeUInt16LE(32, e + 6); // bits per pixel
-    header.writeUInt32LE(images[i].length, e + 8);
-    header.writeUInt32LE(offset, e + 12);
-    offset += images[i].length;
-  });
-  return Buffer.concat([header, ...images]);
-}
-
 // One native image with a representation per DPI scale, for 16-px tray and overlay icons.
+// Each image is drawn once: unread counts repeat, so later updates are instant.
 const SCALES = [1, 1.25, 1.5, 2, 2.5, 3];
-function multiScale(draw) {
+const cache = new Map();
+function multiScale(key, draw) {
+  if (cache.has(key)) return cache.get(key);
   const { nativeImage } = require('electron');
   const img = nativeImage.createEmpty();
   for (const scaleFactor of SCALES) img.addRepresentation({ scaleFactor, buffer: draw(Math.round(16 * scaleFactor)) });
+  cache.set(key, img);
   return img;
 }
 
-const trayIcon = (count) => multiScale((s) => trayPng(s, count));
-const overlayIcon = (count) => multiScale((s) => overlayPng(s, count));
+const trayIcon = (count) => multiScale(`tray${Math.min(count, 10)}`, (s) => trayPng(s, count));
+const overlayIcon = (count) => multiScale(`overlay${Math.min(count, 100)}`, (s) => overlayPng(s, count));
 
 function windowIcon() {
   const { nativeImage } = require('electron');
   return nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'icon.ico'));
 }
 
-const ICO_SIZES = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256];
-
-module.exports = { markPng, icoBuffer, ICO_SIZES, trayIcon, overlayIcon, windowIcon, badgeLabel, trayPng, overlayPng };
+module.exports = { markPng, trayIcon, overlayIcon, windowIcon, badgeLabel };

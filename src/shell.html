@@ -33,12 +33,6 @@
     transition: opacity .22s cubic-bezier(.2,0,0,1), transform .3s cubic-bezier(.2,.9,.25,1.2);
   }
   .pill.on { opacity: 1; transform: none; }
-  .toast {
-    margin-left: 12px; font-size: 12.5px; font-weight: 500; color: var(--muted);
-    opacity: 0; transform: translateX(-6px);
-    transition: opacity .25s cubic-bezier(.2,0,0,1), transform .3s cubic-bezier(.2,0,0,1);
-  }
-  .toast.on { opacity: 1; transform: none; }
 </style>
 </head>
 <body>
@@ -49,7 +43,7 @@
       </svg>
     </button>
     <div class="brand">
-      <svg viewBox="0 0 64 64" class="beat" aria-hidden="true">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
         <defs>
           <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stop-color="#28e896"/><stop offset="1" stop-color="#12b878"/>
@@ -57,13 +51,12 @@
         </defs>
         <path d="M20 46 L7 59 L12 42" fill="url(#g)"/>
         <circle cx="34" cy="30" r="23" fill="none" stroke="url(#g)" stroke-width="6"/>
-        <path class="line" d="M17 32h8l4-10 6 20 4-11 3 4h8" fill="none" stroke="url(#g)" stroke-width="4.5"
+        <path d="M17 32h8l4-10 6 20 4-11 3 4h8" fill="none" stroke="url(#g)" stroke-width="4.5"
           stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <span>Pulso</span>
     </div>
     <div class="pill" id="pill"></div>
-    <div class="toast" id="toast"></div>
   </div>
 <script>
   const pill = document.getElementById('pill');
@@ -72,15 +65,7 @@
     if (n > 0) pill.textContent = `${n > 99 ? '99+' : n} sin leer`;
   }
   window.shell.onUnread(setUnread);
-  window.shell.info().then(({ unread }) => setUnread(unread));
-  const toast = document.getElementById('toast');
-  let toastTimer;
-  window.shell.onToast((text, ms) => {
-    toast.textContent = text;
-    toast.classList.add('on');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('on'), ms || 3000);
-  });
+  window.shell.unread().then(setUnread);
   const btn = document.getElementById('menu');
   btn.addEventListener('click', () => {
     const r = btn.getBoundingClientRect();

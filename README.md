@@ -16,9 +16,9 @@ día. Encima le añade integración con Windows y un diseño propio. No está af
 
 - **Diseño Pulso:** tema oscuro verde, barra de título propia con el logo y contador de no leídos,
   chats redondeados y transiciones suaves.
-- **Gráficos optimizados para tu PC:** en el primer arranque Pulso mide los fps reales y, si no
-  va fluido, prueba otros modos gráficos (GPU integrada, OpenGL, GPU dedicada, sin GPU) y se
-  queda con el mejor. Se puede repetir en **☰ → Ajustes → Optimizar gráficos**.
+- **Ligero y fluido:** Pulso no trabaja en cada tecla ni al desplazarte; solo hace un
+  mantenimiento breve cuando la página está inactiva. Si la GPU falla al arrancar, sigue sin
+  ella. Se puede cambiar en **☰ → Ajustes → Aceleración por GPU** y en la bandeja.
 - **Todo WhatsApp Web:** chats, grupos, comunidades, canales, estados, archivos, notas de voz,
   stickers, encuestas, búsqueda y archivados.
 - Notificaciones nativas de Windows. Al hacer clic se abre el chat.

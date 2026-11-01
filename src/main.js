@@ -1,28 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 const {
-  app, BrowserWindow, WebContentsView, Tray, Menu, nativeImage, nativeTheme, shell, session,
+  app, BrowserWindow, WebContentsView, Tray, Menu, nativeTheme, shell, session,
   ipcMain, Notification, dialog, clipboard, desktopCapturer,
 } = require('electron');
-
-// Versions up to 1.1.0 kept their data under the app's previous name: move the
-// login session and settings over so updating doesn't require scanning the QR again.
-const legacyData = path.join(app.getPath('appData'), 'Whatsdesk');
-const dataDir = path.join(app.getPath('appData'), 'Pulso');
-if (app.isPackaged && !fs.existsSync(dataDir) && fs.existsSync(legacyData)) {
-  try {
-    fs.renameSync(legacyData, dataDir);
-  } catch {
-    app.setPath('userData', legacyData);
-  }
-}
-
 const settings = require('./settings');
 const icons = require('./icons');
 const updater = require('./updater');
-const gpu = require('./gpu');
-
-gpu.setup();
 
 const APP_NAME = 'Pulso';
 const TITLE_BAR_HEIGHT = 40;
@@ -34,8 +18,6 @@ const PARTITION = 'persist:whatsapp';
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   `(KHTML, like Gecko) Chrome/${process.versions.chrome.split('.')[0]}.0.0.0 Safari/537.36`;
-// Edge's wheel scrolling: percent-based steps and a smoother curve, closer to a phone's feel.
-app.commandLine.appendSwitch('enable-features', 'WindowsScrollingPersonality,PercentBasedScrolling');
 const ALLOWED_PERMISSIONS = new Set([
   'notifications', 'media', 'mediaKeySystem', 'clipboard-read',
   'clipboard-sanitized-write', 'fullscreen', 'display-capture',
@@ -43,6 +25,8 @@ const ALLOWED_PERMISSIONS = new Set([
 // Links that try to send the user to install another WhatsApp app.
 const PROMO_LINK =
   /whatsapp\.com\/download|apps\.microsoft\.com|get\.microsoft\.com|ms-windows-store:|apps\.apple\.com|play\.google\.com/i;
+// page.js runs inside WhatsApp Web; the sandboxed preload receives it from here.
+const PAGE_CODE = fs.readFileSync(path.join(__dirname, 'page.js'), 'utf8');
 
 let win;
 let wa; // WhatsApp Web's webContents, shown below the title bar.
@@ -53,8 +37,52 @@ let unread = 0;
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
+  setUpGraphics();
   app.on('second-instance', showWindow);
   app.whenReady().then(start);
+}
+
+function setUpGraphics() {
+  // Still marked from the previous launch: it never finished loading, so start without the GPU.
+  if (settings.get('gpuBooting')) settings.set('hardwareAcceleration', false);
+  if (settings.get('hardwareAcceleration')) {
+    settings.set('gpuBooting', true);
+    // Draw on the GPU inside the main process. As a separate process, NVIDIA's driver treats it
+    // as a background app and caps it (20 fps) when "background application max frame rate" is on.
+    // Electron 38+ never presents the window to the screen with this switch: stay on Electron 37.
+    app.commandLine.appendSwitch('in-process-gpu');
+  } else {
+    app.disableHardwareAcceleration();
+  }
+  // Keeps messages and notifications arriving while Pulso sits in the tray.
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+  // Edge's wheel scrolling: percent-based steps and a smoother curve, closer to a phone's feel.
+  app.commandLine.appendSwitch('enable-features', 'WindowsScrollingPersonality,PercentBasedScrolling');
+}
+
+// Without a real GPU every pixel is drawn by the CPU: page.js then drops its costliest effects.
+async function detectSoftwareRendering() {
+  let software = !settings.get('hardwareAcceleration');
+  try {
+    const status = app.getGPUFeatureStatus();
+    const { gpuDevice = [] } = await app.getGPUInfo('basic');
+    const active = gpuDevice.find((d) => d.active);
+    software = software || /^disabled/.test(status.gpu_compositing) ||
+      /swiftshader|basic render/i.test((active && active.deviceString) || '');
+  } catch {
+    // Keep what the settings say.
+  }
+  settings.set('lite', software);
+  if (!wa.isDestroyed()) wa.send('pulso:lite', software);
+}
+
+function relaunch() {
+  quitting = true;
+  const exe = process.env.PORTABLE_EXECUTABLE_FILE; // portable: the real .exe, not the temp folder
+  const args = process.argv.slice(1).filter((a) => a !== '--hidden');
+  app.relaunch(exe ? { execPath: exe, args } : { args });
+  app.exit(0);
 }
 
 app.setAppUserModelId('com.pulso.windows');
@@ -83,10 +111,7 @@ function start() {
   createTray();
   buildMenu();
   applyLaunchAtLogin();
-  updater.init(win, wa, () => { quitting = true; });
-  wa.once('did-finish-load', () => setTimeout(() => {
-    gpu.detectSoftware().then((lite) => { if (!wa.isDestroyed()) wa.send('pulso:lite', lite); });
-  }, 1500));
+  updater.init(wa, () => { quitting = true; });
 }
 
 function isWhatsApp(url) {
@@ -109,9 +134,8 @@ function openExternal(url) {
 }
 
 function createWindow() {
-  const bounds = settings.get('bounds');
   win = new BrowserWindow({
-    ...bounds,
+    ...settings.get('bounds'),
     minWidth: 640,
     minHeight: 480,
     title: APP_NAME,
@@ -120,24 +144,19 @@ function createWindow() {
     show: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: BG, symbolColor: '#cfe9dd', height: TITLE_BAR_HEIGHT },
-    webPreferences: {
-      preload: path.join(__dirname, 'shell-preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
+    webPreferences: { preload: path.join(__dirname, 'shell-preload.js') },
   });
   win.loadFile(path.join(__dirname, 'shell.html'));
-  win.webContents.once('did-finish-load', () => gpu.loaded());
+  win.webContents.once('did-finish-load', () => settings.set('gpuBooting', false));
 
   const view = new WebContentsView({
     webPreferences: {
       partition: PARTITION,
       preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false,
       spellcheck: true,
       backgroundThrottling: false,
+      // Keeps WhatsApp's compiled code on disk: less work and fewer stalls after the first run.
+      v8CacheOptions: 'bypassHeatCheck',
     },
   });
   view.setBackgroundColor(BG);
@@ -176,32 +195,18 @@ function createWindow() {
     const match = /^\((\d+)\)/.exec(title);
     setUnread(match ? Number(match[1]) : 0);
   });
-  wa.once('did-finish-load', () => setTimeout(measureGraphics, 2500));
+  // Run after the page has painted: before the GPU starts, its status reads "disabled".
+  wa.once('did-finish-load', () => setTimeout(detectSoftwareRendering, 1500));
   wa.on('context-menu', (event, params) => showContextMenu(params));
   wa.on('render-process-gone', (event, details) => {
     if (details.reason !== 'clean-exit') wa.reload();
-  });
-  // The hidden title bar also hides the menu bar, so handle its shortcuts here.
-  wa.on('before-input-event', (event, input) => {
-    if (input.type !== 'keyDown') return;
-    const key = input.key.toLowerCase();
-    if (input.key === 'F11') toggleFullScreen();
-    else if (!input.control || input.alt) return;
-    else if (key === 'q') quit();
-    else if (key === 'r' && !input.shift) wa.reload();
-    else if (key === 'w') hideWindow();
-    else if (key === '=' || key === '+') setZoom(0.1);
-    else if (key === '-') setZoom(-0.1);
-    else if (key === '0') setZoom(0);
-    else return;
-    event.preventDefault();
   });
 
   win.on('close', (event) => {
     saveBounds();
     if (!quitting && settings.get('closeToTray')) {
       event.preventDefault();
-      hideWindow();
+      win.hide();
     }
   });
   win.on('focus', () => {
@@ -210,86 +215,21 @@ function createWindow() {
   });
 }
 
-// First run only: measures real fps inside WhatsApp Web while the title bar animates, and lets
-// gpu.js try another graphics mode (restarting Pulso) until one is smooth.
-let measuring = false;
-async function measureGraphics() {
-  if (measuring || gpu.state().done) return;
-  // Only measured with Pulso in the foreground; checks again until it is.
-  if (!win.isVisible() || !win.isFocused()) {
-    setTimeout(measureGraphics, 2000);
-    return;
-  }
-  measuring = true;
-  win.webContents.send('shell:toast', 'Optimizando gráficos… (solo la primera vez)', 3200);
-  let fps = NaN;
-  try {
-    fps = await wa.executeJavaScript(`new Promise((resolve) => {
-      const dts = []; let last = performance.now(); const t0 = last;
-      const tick = (t) => { dts.push(t - last); last = t;
-        if (t - t0 < 2800) requestAnimationFrame(tick);
-        else { dts.shift(); dts.sort((a, b) => a - b); resolve(1000 / (dts[Math.floor(dts.length * .75)] || 16.7)); } };
-      requestAnimationFrame(tick);
-    })`);
-  } catch { /* page navigated away; try again next launch */ }
-  measuring = false;
-  // Another app took the foreground: the measurement doesn't count.
-  if (!win.isFocused()) {
-    setTimeout(measureGraphics, 2000);
-    return;
-  }
-  const r = gpu.report(fps, () => { quitting = true; });
-  if (r.action === 'restart') win.webContents.send('shell:toast', 'Probando otro modo gráfico… Pulso se reinicia solo', 4000);
-  else if (r.action === 'done') win.webContents.send('shell:toast', `Gráficos listos: ${Math.round(r.fps)} fps`, 3000);
-}
-
-function toggleFullScreen() {
-  win.setFullScreen(!win.isFullScreen());
-}
-
 function saveBounds() {
   if (!win || win.isDestroyed()) return;
   settings.set('maximized', win.isMaximized());
   if (!win.isMaximized() && !win.isMinimized()) settings.set('bounds', win.getBounds());
 }
 
-// Eases the window opacity so showing and hiding from the tray feels smooth.
-let fadeTimer;
-function fade(from, to, ms, done) {
-  clearInterval(fadeTimer);
-  const start = Date.now();
-  win.setOpacity(from);
-  fadeTimer = setInterval(() => {
-    const t = Math.min(1, (Date.now() - start) / ms);
-    const eased = 1 - Math.pow(1 - t, 3);
-    win.setOpacity(from + (to - from) * eased);
-    if (t === 1) {
-      clearInterval(fadeTimer);
-      if (done) done();
-    }
-  }, 1000 / 120);
-}
-
 function showWindow() {
   if (!win) return;
   if (win.isMinimized()) win.restore();
-  const wasVisible = win.isVisible();
-  if (!wasVisible) win.setOpacity(0);
   win.show();
   win.focus();
-  if (!wasVisible) fade(0, 1, 180);
-}
-
-function hideWindow() {
-  if (!win.isVisible()) return;
-  fade(win.getOpacity(), 0, 140, () => {
-    win.hide();
-    win.setOpacity(1);
-  });
 }
 
 function toggleWindow() {
-  if (win.isVisible() && win.isFocused()) hideWindow();
+  if (win.isVisible() && win.isFocused()) win.hide();
   else showWindow();
 }
 
@@ -310,10 +250,7 @@ function setUnread(count) {
   unread = count;
   tray.setImage(icons.trayIcon(count));
   tray.setToolTip(count ? `${APP_NAME} — ${count} sin leer` : APP_NAME);
-  win.setOverlayIcon(
-    count ? icons.overlayIcon(count) : null,
-    count ? `${count} mensajes sin leer` : '',
-  );
+  win.setOverlayIcon(count ? icons.overlayIcon(count) : null, count ? `${count} mensajes sin leer` : '');
   win.setTitle(count ? `(${icons.badgeLabel(count)}) ${APP_NAME}` : APP_NAME);
   win.webContents.send('shell:unread', count);
   if (grew) flash();
@@ -325,13 +262,28 @@ function flash() {
 
 ipcMain.on('pulso:focus', showWindow);
 ipcMain.on('pulso:notified', flash);
-ipcMain.on('pulso:settings', (event) => {
-  event.returnValue = { notificationSound: settings.get('notificationSound'), lite: gpu.state().software };
+ipcMain.on('pulso:page', (event) => {
+  event.returnValue = {
+    code: PAGE_CODE,
+    sound: settings.get('notificationSound'),
+    lite: settings.get('lite'),
+  };
 });
 ipcMain.on('shell:menu', (event, x, y) => {
   Menu.getApplicationMenu().popup({ window: win, x: Math.round(x), y: Math.round(y) });
 });
-ipcMain.handle('shell:info', () => ({ version: app.getVersion(), unread }));
+ipcMain.handle('shell:unread', () => unread);
+
+function checkForUpdates() {
+  showWindow();
+  updater.check(true);
+}
+
+function setGraphics(on) {
+  settings.set('gpuBooting', false);
+  settings.set('hardwareAcceleration', on);
+  relaunch();
+}
 
 function createTray() {
   tray = new Tray(icons.trayIcon(0));
@@ -341,9 +293,14 @@ function createTray() {
     { label: `Mostrar ${APP_NAME}`, click: showWindow },
     { type: 'separator' },
     { label: 'Recargar', click: () => wa.reload() },
-    { label: 'Buscar actualizaciones…', click: () => updater.check(true) },
+    { label: 'Buscar actualizaciones…', click: checkForUpdates },
     // Reachable even when the window shows nothing.
-    { label: 'Restablecer gráficos', click: () => gpu.retune(() => { quitting = true; }) },
+    {
+      label: 'Aceleración por GPU',
+      type: 'checkbox',
+      checked: settings.get('hardwareAcceleration'),
+      click: (item) => setGraphics(item.checked),
+    },
     { type: 'separator' },
     { label: 'Salir', click: quit },
   ]));
@@ -394,7 +351,7 @@ function buildMenu() {
       label: 'Archivo',
       submenu: [
         { label: 'Recargar', accelerator: 'CmdOrCtrl+R', click: () => wa.reload() },
-        { label: 'Ocultar en la bandeja', accelerator: 'CmdOrCtrl+W', click: hideWindow },
+        { label: 'Ocultar en la bandeja', accelerator: 'CmdOrCtrl+W', click: () => win.hide() },
         { type: 'separator' },
         { label: 'Borrar caché y recargar', click: clearCache },
         { label: 'Cerrar sesión y borrar datos', click: resetSession },
@@ -418,14 +375,14 @@ function buildMenu() {
         { label: 'Alejar', accelerator: 'CmdOrCtrl+-', click: () => setZoom(-0.1) },
         { label: 'Tamaño real', accelerator: 'CmdOrCtrl+0', click: () => setZoom(0) },
         { type: 'separator' },
-        { label: 'Pantalla completa', accelerator: 'F11', click: toggleFullScreen },
+        { label: 'Pantalla completa', accelerator: 'F11', click: () => win.setFullScreen(!win.isFullScreen()) },
         { label: 'Herramientas de desarrollo', click: () => wa.toggleDevTools() },
       ],
     },
     {
       label: 'Ajustes',
       submenu: [
-        { label: 'Buscar actualizaciones…', click: () => updater.check(true) },
+        { label: 'Buscar actualizaciones…', click: checkForUpdates },
         { type: 'separator' },
         toggleSetting('Cerrar a la bandeja del sistema', 'closeToTray'),
         toggleSetting('Iniciar con Windows', 'launchAtLogin', applyLaunchAtLogin),
@@ -443,10 +400,7 @@ function buildMenu() {
           ],
         },
         { type: 'separator' },
-        {
-          label: `Optimizar gráficos (ahora: ${gpu.state().label})`,
-          click: () => gpu.retune(() => { quitting = true; }),
-        },
+        toggleSetting('Aceleración por GPU', 'hardwareAcceleration', setGraphics),
       ],
     },
     {
@@ -491,6 +445,7 @@ async function resetSession() {
 }
 
 function showAbout() {
+  const g = app.getGPUFeatureStatus();
   dialog.showMessageBox(win, {
     type: 'info',
     title: `Acerca de ${APP_NAME}`,
@@ -499,18 +454,8 @@ function showAbout() {
       'Tu WhatsApp, en tu estilo. Cliente de escritorio no oficial para Windows que ejecuta WhatsApp Web.\n' +
       'No está afiliado a WhatsApp ni a Meta.\n' +
       `Electron ${process.versions.electron} · Chromium ${process.versions.chrome}\n` +
-      `Gráficos: ${graphicsSummary()}`,
+      `Gráficos: compositing ${g.gpu_compositing} · raster ${g.rasterization}`,
   });
-}
-
-function graphicsSummary() {
-  const s = gpu.state();
-  let status = '';
-  try {
-    const g = app.getGPUFeatureStatus();
-    status = ` · compositing ${g.gpu_compositing} · raster ${g.rasterization}`;
-  } catch { /* not available */ }
-  return `${s.label}${s.fps ? ` (${s.fps} fps)` : ''}${status}`;
 }
 
 function showContextMenu(params) {

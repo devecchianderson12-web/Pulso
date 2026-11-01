@@ -30,7 +30,7 @@
     ],
     "files": [
       "src/**/*",
-      "assets/**/*",
+      "assets/icon.ico",
       "package.json"
     ],
     "win": {
@@ -51,7 +51,12 @@
     },
     "portable": {
       "artifactName": "Pulso-Portable-${version}.exe"
-    }
+    },
+    "electronLanguages": [
+      "es",
+      "en-US"
+    ],
+    "compression": "maximum"
   },
   "dependencies": {
     "electron-updater": "^6.3.9"

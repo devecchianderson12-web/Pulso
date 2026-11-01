@@ -13,6 +13,9 @@ const DEFAULTS = {
   spellcheck: true,
   spellcheckLanguages: ['es', 'en-US'],
   zoomFactor: 1,
+  hardwareAcceleration: true,
+  gpuBooting: false,
+  lite: false,
 };
 
 const file = () => path.join(app.getPath('userData'), 'settings.json');
@@ -33,7 +36,8 @@ function get(key) {
 }
 
 function set(key, value) {
-  load()[key] = value;
+  if (load()[key] === value) return;
+  cache[key] = value;
   try {
     fs.mkdirSync(path.dirname(file()), { recursive: true });
     fs.writeFileSync(file(), JSON.stringify(cache, null, 2));
