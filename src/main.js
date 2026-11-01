@@ -10,7 +10,6 @@ const updater = require('./updater');
 
 const APP_NAME = 'Pulso';
 const TITLE_BAR_HEIGHT = 40;
-const BG = '#0b100f';
 const WHATSAPP_URL = 'https://web.whatsapp.com/';
 const WHATSAPP_ORIGIN = 'https://web.whatsapp.com';
 const PARTITION = 'persist:whatsapp';
@@ -140,10 +139,10 @@ function createWindow() {
     minHeight: 480,
     title: APP_NAME,
     icon: icons.windowIcon(),
-    backgroundColor: BG,
+    backgroundColor: settings.get('barColor'),
     show: false,
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: BG, symbolColor: '#cfe9dd', height: TITLE_BAR_HEIGHT },
+    titleBarOverlay: { color: settings.get('barColor'), symbolColor: '#cfe9dd', height: TITLE_BAR_HEIGHT },
     webPreferences: { preload: path.join(__dirname, 'shell-preload.js') },
   });
   win.loadFile(path.join(__dirname, 'shell.html'));
@@ -159,7 +158,7 @@ function createWindow() {
       v8CacheOptions: 'bypassHeatCheck',
     },
   });
-  view.setBackgroundColor(BG);
+  view.setBackgroundColor(settings.get('barColor'));
   win.contentView.addChildView(view);
   wa = view.webContents;
   const layout = () => {
@@ -267,12 +266,62 @@ ipcMain.on('pulso:page', (event) => {
     code: PAGE_CODE,
     sound: settings.get('notificationSound'),
     lite: settings.get('lite'),
+    theme: settings.get('theme'),
   };
 });
-ipcMain.on('shell:menu', (event, x, y) => {
-  Menu.getApplicationMenu().popup({ window: win, x: Math.round(x), y: Math.round(y) });
+ipcMain.handle('shell:state', () => ({ unread, color: settings.get('barColor') }));
+
+// Options shown in the Pulso panel inside WhatsApp Web. That page is remote content, so only
+// these exact keys and actions can be reached from it.
+const OPTION_EFFECTS = {
+  closeToTray: null,
+  launchAtLogin: applyLaunchAtLogin,
+  startMinimized: null,
+  notificationSound: () => wa.reload(),
+  flashOnMessage: null,
+  spellcheck: (on) => session.fromPartition(PARTITION).setSpellCheckerEnabled(on),
+};
+const ACTIONS = {
+  checkUpdates: checkForUpdates,
+  reload: () => wa.reload(),
+  clearCache,
+  resetSession,
+  about: showAbout,
+  help: () => openExternal('https://faq.whatsapp.com/'),
+  quit,
+};
+ipcMain.handle('pulso:options', () => ({
+  version: app.getVersion(),
+  gpu: settings.get('hardwareAcceleration'),
+  languages: SPELL_LANGS,
+  activeLanguages: settings.get('spellcheckLanguages'),
+  toggles: Object.fromEntries(Object.keys(OPTION_EFFECTS).map((k) => [k, settings.get(k)])),
+}));
+ipcMain.on('pulso:set', (event, key, value) => {
+  if (!(key in OPTION_EFFECTS)) return;
+  settings.set(key, Boolean(value));
+  if (OPTION_EFFECTS[key]) OPTION_EFFECTS[key](Boolean(value));
 });
-ipcMain.handle('shell:unread', () => unread);
+ipcMain.on('pulso:gpu', (event, on) => setGraphics(Boolean(on)));
+ipcMain.on('pulso:language', (event, code, on) => {
+  if (!SPELL_LANGS.some(([c]) => c === code)) return;
+  const others = settings.get('spellcheckLanguages').filter((c) => c !== code);
+  const next = on ? [...others, code] : others;
+  settings.set('spellcheckLanguages', next);
+  session.fromPartition(PARTITION).setSpellCheckerLanguages(next);
+});
+ipcMain.on('pulso:action', (event, name) => {
+  if (Object.hasOwn(ACTIONS, name)) ACTIONS[name]();
+});
+// The title bar takes the theme's surface color, so it reads as part of the interface.
+ipcMain.on('pulso:theme', (event, id, color) => {
+  if (!/^[a-z]{1,20}$/.test(id) || !/^#[0-9a-f]{6}$/i.test(color)) return;
+  settings.set('theme', id);
+  settings.set('barColor', color);
+  win.setBackgroundColor(color);
+  win.setTitleBarOverlay({ color, symbolColor: '#cfe9dd', height: TITLE_BAR_HEIGHT });
+  win.webContents.send('shell:color', color);
+});
 
 function checkForUpdates() {
   showWindow();
@@ -306,18 +355,6 @@ function createTray() {
   ]));
 }
 
-function toggleSetting(label, key, after) {
-  return {
-    label,
-    type: 'checkbox',
-    checked: settings.get(key),
-    click: (item) => {
-      settings.set(key, item.checked);
-      if (after) after(item.checked);
-    },
-  };
-}
-
 function setZoom(delta) {
   const factor = delta === 0 ? 1 : Math.min(3, Math.max(0.5, wa.getZoomFactor() + delta));
   wa.setZoomFactor(factor);
@@ -329,89 +366,21 @@ const SPELL_LANGS = [
   ['fr', 'Francés'], ['de', 'Alemán'], ['it', 'Italiano'],
 ];
 
-function spellMenu() {
-  const active = settings.get('spellcheckLanguages');
-  return SPELL_LANGS.map(([code, label]) => ({
-    label,
-    type: 'checkbox',
-    checked: active.includes(code),
-    click: (item) => {
-      const next = item.checked
-        ? [...settings.get('spellcheckLanguages'), code]
-        : settings.get('spellcheckLanguages').filter((c) => c !== code);
-      settings.set('spellcheckLanguages', next);
-      session.fromPartition(PARTITION).setSpellCheckerLanguages(next);
-    },
-  }));
-}
-
+// Never shown: the title bar has no menu. It only provides the keyboard shortcuts.
 function buildMenu() {
-  const template = [
-    {
-      label: 'Archivo',
-      submenu: [
-        { label: 'Recargar', accelerator: 'CmdOrCtrl+R', click: () => wa.reload() },
-        { label: 'Ocultar en la bandeja', accelerator: 'CmdOrCtrl+W', click: () => win.hide() },
-        { type: 'separator' },
-        { label: 'Borrar caché y recargar', click: clearCache },
-        { label: 'Cerrar sesión y borrar datos', click: resetSession },
-        { type: 'separator' },
-        { label: 'Salir', accelerator: 'CmdOrCtrl+Q', click: quit },
-      ],
-    },
-    {
-      label: 'Editar',
-      submenu: [
-        { role: 'undo', label: 'Deshacer' }, { role: 'redo', label: 'Rehacer' },
-        { type: 'separator' },
-        { role: 'cut', label: 'Cortar' }, { role: 'copy', label: 'Copiar' },
-        { role: 'paste', label: 'Pegar' }, { role: 'selectAll', label: 'Seleccionar todo' },
-      ],
-    },
-    {
-      label: 'Ver',
-      submenu: [
-        { label: 'Acercar', accelerator: 'CmdOrCtrl+=', click: () => setZoom(0.1) },
-        { label: 'Alejar', accelerator: 'CmdOrCtrl+-', click: () => setZoom(-0.1) },
-        { label: 'Tamaño real', accelerator: 'CmdOrCtrl+0', click: () => setZoom(0) },
-        { type: 'separator' },
-        { label: 'Pantalla completa', accelerator: 'F11', click: () => win.setFullScreen(!win.isFullScreen()) },
-        { label: 'Herramientas de desarrollo', click: () => wa.toggleDevTools() },
-      ],
-    },
-    {
-      label: 'Ajustes',
-      submenu: [
-        { label: 'Buscar actualizaciones…', click: checkForUpdates },
-        { type: 'separator' },
-        toggleSetting('Cerrar a la bandeja del sistema', 'closeToTray'),
-        toggleSetting('Iniciar con Windows', 'launchAtLogin', applyLaunchAtLogin),
-        toggleSetting('Iniciar minimizado', 'startMinimized'),
-        { type: 'separator' },
-        toggleSetting('Sonido en notificaciones', 'notificationSound', () => wa.reload()),
-        toggleSetting('Parpadear en la barra de tareas', 'flashOnMessage'),
-        { type: 'separator' },
-        {
-          label: 'Corrector ortográfico',
-          submenu: [
-            toggleSetting('Activado', 'spellcheck', (on) => session.fromPartition(PARTITION).setSpellCheckerEnabled(on)),
-            { type: 'separator' },
-            ...spellMenu(),
-          ],
-        },
-        { type: 'separator' },
-        toggleSetting('Aceleración por GPU', 'hardwareAcceleration', setGraphics),
-      ],
-    },
-    {
-      label: 'Ayuda',
-      submenu: [
-        { label: 'Centro de ayuda de WhatsApp', click: () => openExternal('https://faq.whatsapp.com/') },
-        { label: `Acerca de ${APP_NAME}`, click: showAbout },
-      ],
-    },
-  ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  Menu.setApplicationMenu(Menu.buildFromTemplate([{
+    label: APP_NAME,
+    submenu: [
+      { label: 'Recargar', accelerator: 'CmdOrCtrl+R', click: () => wa.reload() },
+      { label: 'Ocultar', accelerator: 'CmdOrCtrl+W', click: () => win.hide() },
+      { label: 'Salir', accelerator: 'CmdOrCtrl+Q', click: quit },
+      { label: 'Acercar', accelerator: 'CmdOrCtrl+=', click: () => setZoom(0.1) },
+      { label: 'Alejar', accelerator: 'CmdOrCtrl+-', click: () => setZoom(-0.1) },
+      { label: 'Tamaño real', accelerator: 'CmdOrCtrl+0', click: () => setZoom(0) },
+      { label: 'Pantalla completa', accelerator: 'F11', click: () => win.setFullScreen(!win.isFullScreen()) },
+      { label: 'Herramientas de desarrollo', accelerator: 'CmdOrCtrl+Shift+I', click: () => wa.toggleDevTools() },
+    ],
+  }]));
 }
 
 function applyLaunchAtLogin() {

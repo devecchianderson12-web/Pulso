@@ -16,6 +16,8 @@ const DEFAULTS = {
   hardwareAcceleration: true,
   gpuBooting: false,
   lite: false,
+  theme: 'pulso',
+  barColor: '#0e1413',
 };
 
 const file = () => path.join(app.getPath('userData'), 'settings.json');

@@ -14,11 +14,13 @@ día. Encima le añade integración con Windows y un diseño propio. No está af
 
 ## Funciones
 
-- **Diseño Pulso:** tema oscuro verde, barra de título propia con el logo y contador de no leídos,
+- **Diseño Pulso:** tema oscuro verde, barra de título integrada con el logo y contador de no leídos,
   chats redondeados y transiciones suaves.
 - **Ligero y fluido:** Pulso no trabaja en cada tecla ni al desplazarte; solo hace un
   mantenimiento breve cuando la página está inactiva. Si la GPU falla al arrancar, sigue sin
-  ella. Se puede cambiar en **☰ → Ajustes → Aceleración por GPU** y en la bandeja.
+  ella. Se puede cambiar en **Ajustes de Pulso → Aceleración por GPU** y en la bandeja.
+- **Temas:** Pulso, Estilo Telegram y Estilo Discord, en **Perfil → Temas**.
+- **Animaciones** al enviar y recibir mensajes, cambiar de chat y abrir menús.
 - **Todo WhatsApp Web:** chats, grupos, comunidades, canales, estados, archivos, notas de voz,
   stickers, encuestas, búsqueda y archivados.
 - Notificaciones nativas de Windows. Al hacer clic se abre el chat.
@@ -26,9 +28,9 @@ día. Encima le añade integración con Windows y un diseño propio. No está af
 - Cerrar a la bandeja, iniciar con Windows, iniciar minimizado y una sola instancia.
 - La sesión se queda guardada: el QR se escanea solo una vez.
 - Corrector ortográfico en varios idiomas, con sugerencias en el menú contextual. Se puede
-  apagar en **☰ → Ajustes → Corrector ortográfico → Activado**.
+  apagar en **Perfil → Ajustes de Pulso**.
 - **Actualizaciones automáticas:** al publicarse una versión aparece un aviso al pie de la lista
-  de chats con **Actualizar** y **Más tarde**. También está en **☰ → Ajustes → Buscar
+  de chats con **Actualizar** y **Más tarde**. También está en **Perfil → Ajustes de Pulso → Buscar
   actualizaciones…** y en la bandeja.
 - **Modo ligero automático:** si el equipo no tiene GPU utilizable (dibujo por CPU), Pulso
   desactiva los efectos más costosos.

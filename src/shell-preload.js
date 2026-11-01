@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('shell', {
-  unread: () => ipcRenderer.invoke('shell:unread'),
+  state: () => ipcRenderer.invoke('shell:state'),
   onUnread: (cb) => ipcRenderer.on('shell:unread', (e, count) => cb(count)),
-  menu: (x, y) => ipcRenderer.send('shell:menu', x, y),
+  onColor: (cb) => ipcRenderer.on('shell:color', (e, color) => cb(color)),
 });
