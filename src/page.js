@@ -72,21 +72,58 @@
     a, a * { color: #1fdf8a !important; }
   `);
 
+  // Shared pieces of the themes' layouts. WhatsApp's data-testid names are stable, its class names aren't.
+  const LIST_BOX = '.two > div:has(> #side)';
+  const CHAT_BOX = '.two > div:has(> #main), .two > div:has(> [data-testid="intro-panel"])';
+  const BUBBLE = '[data-testid="msg-container"], [data-testid="msg-container"] > div';
+  const TAILS = '[data-testid="tail-out"], [data-testid="tail-in"]';
+  const RAIL_ITEM = '[data-testid="navbar-primary-section"] span > div, [data-testid="navbar-primary-section"] button';
+  const COMPOSER = '[data-testid="compose-box"] span > div > div > div';
+  const WALLPAPER = '[data-testid^="conversation-background"]';
+  const CHAT_HEADER = 'header[data-testid="conversation-header"]';
+  const PILLS = `${BUBBLE} { border-radius: 20px !important; }
+    ${TAILS}, ${WALLPAPER} { display: none !important; }`;
+  const floatingCards = (radius) => `
+    ${LIST_BOX}, ${CHAT_BOX} { margin: 10px 0; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; }
+    ${CHAT_BOX} { margin-left: 10px; margin-right: 10px; }`;
+
   const THEMES = {
     pulso: {
       name: 'Pulso', bar: '#0e1413', panel: '#0e1413', chat: '#0b100f', raised: '#131b19', high: '#1a2421',
       incoming: '#1a2421', outgoing: '#17714b', composer: '#151e1b', accent: '#1fdf8a', selected: '#10392a',
-      onAccent: '#04140c', rows: 14, bubbles: 18,
+      onAccent: '#04140c', rows: 14,
     },
     telegram: {
-      name: 'Estilo Telegram', bar: '#17212b', panel: '#17212b', chat: '#0e1621', raised: '#1e2c3a', high: '#242f3d',
-      incoming: '#182533', outgoing: '#2b5278', composer: '#17212b', accent: '#6ab2f2', selected: '#2b5278',
-      onAccent: '#0e1621', rows: 10, bubbles: 14,
+      name: 'Estilo Telegram', bar: '#0d1418', panel: '#172126', chat: '#111a1f', raised: '#1c2a30', high: '#233339',
+      incoming: '#202e35', outgoing: '#005c4b', composer: '#172126', accent: '#25d366', selected: '#00795f',
+      onAccent: '#04140c', rows: 0, highlight: 'rgba(0, 168, 132, .72)',
+      layout: `${PILLS}${floatingCards(14)}
+        ${CHAT_HEADER} { border-bottom: 1px solid rgba(255, 255, 255, .06); }`,
+    },
+    community: {
+      name: 'Comunidad', bar: '#1a2228', panel: '#222d34', chat: '#1a2228', raised: '#222d34', high: '#2c3942',
+      incoming: '#2c3942', outgoing: '#0b7a66', composer: '#222d34', accent: '#25d366', selected: '#0b7a66',
+      onAccent: '#04140c', rows: 14,
+      layout: `${PILLS}${floatingCards(18)}
+        ${LIST_BOX}, ${CHAT_BOX} { background: transparent; }
+        ${RAIL_ITEM} { border-radius: 12px !important; }
+        ${CHAT_HEADER} { margin: 0 0 10px; border-radius: 16px; }
+        #main { background: transparent !important; }
+        ${COMPOSER} { border-radius: 14px !important; }`,
     },
     discord: {
       name: 'Estilo Discord', bar: '#1e1f22', panel: '#2b2d31', chat: '#313338', raised: '#232428', high: '#383a40',
-      incoming: '#2b2d31', outgoing: '#4752c4', composer: '#383a40', accent: '#5865f2', selected: '#404249',
-      onAccent: '#ffffff', rows: 6, bubbles: 8,
+      incoming: '#313338', outgoing: '#313338', composer: '#383a40', accent: '#25d366', selected: '#404249',
+      onAccent: '#04140c', rows: 6, highlight: 'rgba(255, 255, 255, .09)',
+      layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
+        /* Messages as a flat left-aligned stream instead of bubbles. */
+        ${BUBBLE} { border-radius: 4px !important; box-shadow: none !important; }
+        [data-testid="msg-container"] { max-width: 92% !important; }
+        .focusable-list-item { align-items: flex-start !important; padding-left: 20px !important; }
+        .focusable-list-item:hover { background: rgba(0, 0, 0, .07); }
+        ${RAIL_ITEM} { border-radius: 16px !important; }
+        ${CHAT_HEADER} { box-shadow: 0 1px 0 rgba(0, 0, 0, .3); }
+        ${COMPOSER} { border-radius: 8px !important; }`,
     },
   };
 
@@ -103,9 +140,8 @@
       'systems-chat-surface-tray': t.panel,
     };
     const vars = Object.entries(colors).map(([k, c]) => `--WDS-${k}: ${c} !important; --WDS-${k}-RGB: ${rgb(c)} !important;`);
-    vars.push(`--WDS-surface-highlight: rgba(${rgb(t.accent)}, .08) !important;`);
+    vars.push(`--WDS-surface-highlight: ${t.highlight || `rgba(${rgb(t.accent)}, .08)`} !important;`);
     vars.push(`--WDS-surface-pressed: rgba(${rgb(t.accent)}, .16) !important;`);
-    vars.push(`--chat-bubble-border-radius: ${t.bubbles}px !important;`);
     return vars.join('\n');
   }
 
@@ -122,6 +158,8 @@
       body.dark #pane-side [role="listitem"], body.dark #pane-side [role="row"] { border-radius: ${theme.rows}px; }
       body.dark ::-webkit-scrollbar-thumb { background-color: rgba(${a}, .18) !important; border-radius: 99px; }
       body.dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(${a}, .32) !important; }
+      body.dark .two { background: ${theme.bar} !important; }
+      ${theme.layout || ''}
     `;
   }
 
@@ -566,13 +604,11 @@
 
   function animateMessage(row) {
     if (!motionOk()) return;
-    // Message ids start with the "sent by me" flag; otherwise tell by which side the text sits on.
-    const message = row.matches('[data-id]') ? row : row.querySelector('[data-id]');
-    const flag = /^(true|false)_/.exec((message && message.dataset.id) || '');
-    const text = row.querySelector('[dir]');
-    const box = row.getBoundingClientRect();
-    const out = flag ? flag[1] === 'true'
-      : Boolean(text) && text.getBoundingClientRect().right > box.left + box.width * 0.6;
+    // Sent messages sit at the end of their row. Theme layouts can't change this: it's read from
+    // WhatsApp's tail icon first, which every theme keeps in the DOM.
+    const item = row.querySelector('.focusable-list-item');
+    const out = Boolean(row.querySelector('[data-testid="tail-out"]')) ||
+      (!row.querySelector('[data-testid="tail-in"]') && Boolean(item) && getComputedStyle(item).alignItems === 'flex-end');
     animate(row, [
       { opacity: 0, translate: out ? '0 46px' : '-14px 16px', scale: '.92', transformOrigin: out ? '100% 100%' : '0 100%' },
       { opacity: 1, translate: '0 0', scale: '1', transformOrigin: out ? '100% 100%' : '0 100%' },
