@@ -782,7 +782,8 @@
     #pulso-panel .box { width: min(480px, calc(100vw - 40px)); max-height: calc(100vh - 80px); overflow-y: auto;
       box-sizing: border-box; padding: 20px; border-radius: 18px; background: var(--p-raised);
       border: 1px solid rgba(255, 255, 255, .08); box-shadow: 0 20px 56px rgba(0, 0, 0, .5); }
-    #pulso-panel .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    #pulso-panel .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+      cursor: move; user-select: none; touch-action: none; }
     #pulso-panel h2 { margin: 0; font-size: 18px; font-weight: 600; }
     #pulso-panel h3 { margin: 16px 0 6px; font-size: 12.5px; font-weight: 600; color: var(--p-accent); }
     #pulso-panel button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
@@ -1008,7 +1009,16 @@
         options.append(b);
       };
       addOption('Del tema', 'none');
-      addOption('Dibujos de WhatsApp', 'doodle');
+      addOption('Fondo de WhatsApp', 'doodle');
+      const gallery = document.createElement('button');
+      gallery.className = 'choice';
+      gallery.textContent = 'Elegir en la galería de WhatsApp';
+      gallery.addEventListener('click', () => {
+        apply({ kind: 'doodle' });
+        closePanel();
+        window.pulso.action('wallpapers');
+      });
+      options.append(gallery);
       chooser.append(heading('Fondo de todos los chats'), options, heading('Colores'));
       const colors = document.createElement('div');
       colors.className = 'colors';
@@ -1099,6 +1109,32 @@
     animate(el, [{ opacity: 1 }, { opacity: 0 }], 120).finished.finally(() => el.remove());
   }
 
+  // The panel is dragged by its header and stays where it was left until Pulso restarts.
+  const panelOffset = { x: 0, y: 0 };
+  function makeDraggable(box, handle) {
+    box.style.translate = `${panelOffset.x}px ${panelOffset.y}px`;
+    handle.addEventListener('pointerdown', (down) => {
+      if (down.button !== 0 || down.target.closest('button')) return;
+      const startX = down.clientX - panelOffset.x;
+      const startY = down.clientY - panelOffset.y;
+      const rect = box.getBoundingClientRect();
+      const home = { x: rect.left - panelOffset.x, y: rect.top - panelOffset.y };
+      const onMove = (e) => {
+        // Keeps the header reachable: the panel can't leave the window.
+        panelOffset.x = Math.min(innerWidth - rect.width - home.x, Math.max(-home.x, e.clientX - startX));
+        panelOffset.y = Math.min(innerHeight - 60 - home.y, Math.max(-home.y, e.clientY - startY));
+        box.style.translate = `${panelOffset.x}px ${panelOffset.y}px`;
+      };
+      const onUp = () => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      down.preventDefault();
+    });
+  }
+
   async function openPanel(kind) {
     closePanel();
     if (!panelStyle.isConnected) document.head.append(panelStyle);
@@ -1119,6 +1155,7 @@
     close.addEventListener('click', closePanel);
     head.append(title, close);
     box.append(head);
+    makeDraggable(box, head);
 
     if (kind === 'look') {
       const tabs = document.createElement('div');
@@ -1162,7 +1199,7 @@
     document.body.append(root);
     panel = root;
     animate(root, [{ opacity: 0 }, { opacity: 1 }], 160);
-    animate(box, [{ opacity: 0, scale: '.94', translate: '0 10px' }, { opacity: 1, scale: '1', translate: '0 0' }], 240, POP);
+    animate(box, [{ opacity: 0, scale: '.94' }, { opacity: 1, scale: '1' }], 240, POP);
   }
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
 

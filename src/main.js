@@ -304,6 +304,7 @@ const ACTIONS = {
   clearCache,
   resetSession,
   about: showAbout,
+  wallpapers: openWallpapers,
   help: () => openExternal('https://faq.whatsapp.com/'),
   quit,
 };
@@ -426,6 +427,31 @@ function buildMenu() {
       { label: 'Herramientas de desarrollo', accelerator: 'CmdOrCtrl+Shift+I', click: () => wa.toggleDevTools() },
     ],
   }]));
+}
+
+// WhatsApp's wallpapers are its own images, so its gallery is opened instead of copying them.
+// Its menus only react to real pointer input, so each step is a click at the item's position.
+async function clickItem(selector) {
+  const center = await wa.executeJavaScript(`(() => { const e = [...document.querySelectorAll('${selector}')].pop();
+    if (!e) return null; const r = e.getBoundingClientRect(); return [Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2)]; })()`);
+  if (!center) return false;
+  const [x, y] = center;
+  wa.sendInputEvent({ type: 'mouseMove', x, y });
+  await new Promise((r) => setTimeout(r, 120));
+  wa.sendInputEvent({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 });
+  await new Promise((r) => setTimeout(r, 60));
+  wa.sendInputEvent({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
+  await new Promise((r) => setTimeout(r, 900));
+  return true;
+}
+
+async function openWallpapers() {
+  wa.focus();
+  const steps = ['[data-testid="navbar-footer-section"] img, [data-testid="navbar-footer-section"] button:not(#pulso-look)',
+    '[data-testid="li-chats"]', '[data-testid="li-chat-theme"]'];
+  for (const step of steps) {
+    if (!(await clickItem(step))) return;
+  }
 }
 
 function applyLaunchAtLogin() {
