@@ -18,7 +18,6 @@ const DEFAULTS = {
   lite: false,
   theme: 'pulso',
   barColor: '#0e1413',
-  wallpaper: null,
 };
 
 const file = () => path.join(app.getPath('userData'), 'settings.json');

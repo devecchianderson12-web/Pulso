@@ -810,22 +810,6 @@
     #pulso-panel .sw.on::after { translate: 14px 0; }
     #pulso-panel .danger { color: #ff7b72; }
     #pulso-panel .ver { margin-top: 12px; text-align: center; font-size: 12px; color: #8fa69d; }
-    #pulso-panel .tabs { display: flex; gap: 6px; margin-bottom: 14px; padding: 4px; border-radius: 12px; background: rgba(127, 127, 127, .14); }
-    #pulso-panel .tabs button { flex: 1; padding: 8px; border-radius: 9px; font-weight: 600; transition: background-color .15s; }
-    #pulso-panel .tabs button.on { background: var(--p-accent); color: var(--p-on-accent); }
-    #pulso-panel .preview { position: relative; height: 150px; border-radius: 12px; overflow: hidden; background: var(--p-chat);
-      border: 1px solid rgba(127, 127, 127, .3); }
-    #pulso-panel .preview i { position: absolute; inset: 0; display: block; }
-    #pulso-panel .choices { display: flex; flex-wrap: wrap; gap: 6px; }
-    #pulso-panel .choice { padding: 7px 12px; border-radius: 9px; border: 1px solid rgba(127, 127, 127, .35); }
-    #pulso-panel .choice:hover { background: rgba(127, 127, 127, .14); }
-    #pulso-panel .choice.on { border-color: var(--p-accent); background: rgba(127, 127, 127, .14); }
-    #pulso-panel .colors { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-    #pulso-panel .swatch { height: 34px; border-radius: 8px; border: 2px solid rgba(127, 127, 127, .3); }
-    #pulso-panel .swatch.on { border-color: var(--p-accent); }
-    #pulso-panel .range { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-    #pulso-panel .range span { width: 84px; flex: none; font-size: 13px; }
-    #pulso-panel .range input { flex: 1; min-width: 0; accent-color: var(--p-accent); }
   `);
 
   const TOGGLE_LABELS = [
@@ -886,210 +870,16 @@
     return grid;
   }
 
-  // ---------- Global chat background ----------
-  // Drawn on WhatsApp's own wallpaper layer, so it sits behind the messages of every chat.
-  const WALL_FITS = [
-    ['cover', 'Expandir'], ['fill', 'Estirar'], ['center', 'Centrar'], ['contain', 'Ajustar'], ['wide', '16:9'],
-  ];
-  const WALL_COLORS = ['#0b141a', '#1f2c34', '#3b4a54', '#14342b', '#1b3a57', '#3a2a52', '#5a2a3c', '#6b4a1f',
-    '#d9dbd5', '#c6e3d1', '#bcd9ea', '#e6d3ea'];
-  const wallStyle = makeStyle('');
-  let wall = { kind: 'none', color: WALL_COLORS[0], fit: 'cover', opacity: 1, zoom: 1, x: 50, y: 50 };
-  let wallUrl = null;
-
-  const fitCss = (w) => ({
-    cover: 'background-size: cover;',
-    fill: 'background-size: 100% 100%;',
-    center: 'background-size: auto;',
-    contain: 'background-size: contain;',
-    wide: 'background-size: cover;',
-  }[w.fit]);
-
-  function renderWall() {
-    if (wall.kind === 'none' || (wall.kind === 'image' && !wallUrl)) {
-      wallStyle.textContent = '';
-      return;
-    }
-    const layer = 'body #main [data-testid^="conversation-background"]';
-    const base = `${layer} { display: block !important; opacity: ${wall.opacity} !important; }`;
-    if (wall.kind === 'doodle') {
-      wallStyle.textContent = base;
-    } else if (wall.kind === 'color') {
-      wallStyle.textContent = `${base} ${layer} { background: ${wall.color} !important; }`;
-    } else {
-      const wide = wall.fit === 'wide'
-        ? 'top: 50% !important; bottom: auto !important; height: auto !important; aspect-ratio: 16 / 9; translate: 0 -50%;' : '';
-      wallStyle.textContent = `#main { overflow: hidden; } ${base}
-        ${layer} { inset: 0; ${wide} scale: ${wall.zoom}; background: url("${wallUrl}") no-repeat ${wall.x}% ${wall.y}% !important;
-          ${fitCss(wall)} }`;
-    }
-  }
-
-  function dataUrlToBlobUrl(dataUrl) {
-    const [head, body] = dataUrl.split(',');
-    const bytes = Uint8Array.from(atob(body), (c) => c.charCodeAt(0));
-    return URL.createObjectURL(new Blob([bytes], { type: head.slice(5).split(';')[0] }));
-  }
-
-  async function loadWall() {
-    const saved = await window.pulso.wallpaper();
-    if (saved.config) wall = { ...wall, ...saved.config };
-    if (saved.image) wallUrl = dataUrlToBlobUrl(saved.image);
-    document.head.append(wallStyle);
-    renderWall();
-  }
-
-  // Scaled down before saving: a screen-sized photo is enough, and it keeps Pulso light.
-  async function pickWallImage(file) {
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, 2560 / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-    window.pulso.saveWallpaperImage(dataUrl);
-    if (wallUrl) URL.revokeObjectURL(wallUrl);
-    wallUrl = dataUrlToBlobUrl(dataUrl);
-    wall = { ...wall, kind: 'image', zoom: 1, x: 50, y: 50 };
-  }
-
-  function wallPreview() {
-    const box = document.createElement('div');
-    box.className = 'preview';
-    const inner = document.createElement('i');
-    box.append(inner);
-    return { box, paint() {
-      const w = wall;
-      inner.style.cssText = `opacity: ${w.opacity}; background: ${w.kind === 'color' ? w.color : 'transparent'};`;
-      if (w.kind === 'image' && wallUrl) {
-        inner.style.cssText += `background: url("${wallUrl}") no-repeat ${w.x}% ${w.y}%; scale: ${w.zoom}; ${fitCss(w)}
-          ${w.fit === 'center' ? 'background-size: 40%;' : ''} ${w.fit === 'wide' ? 'inset: auto 0; top: 50%; aspect-ratio: 16 / 9; translate: 0 -50%;' : ''}`;
-      }
-    } };
-  }
-
-  function slider(label, min, max, step, key, onInput) {
-    const row = document.createElement('label');
-    row.className = 'range';
-    const name = document.createElement('span');
-    name.textContent = label;
-    const input = document.createElement('input');
-    Object.assign(input, { type: 'range', min, max, step, value: wall[key] });
-    input.addEventListener('input', () => {
-      wall[key] = Number(input.value);
-      onInput();
-    });
-    input.addEventListener('change', () => window.pulso.saveWallpaper(wall));
-    row.append(name, input);
-    return row;
-  }
-
-  function wallTab() {
-    const tab = document.createElement('div');
-    const preview = wallPreview();
-    const redraw = () => { renderWall(); preview.paint(); };
-    const chooser = document.createElement('div');
-    const custom = document.createElement('div');
-    const apply = (next) => {
-      wall = { ...wall, ...next };
-      window.pulso.saveWallpaper(wall);
-      redraw();
-      paintChoices();
-    };
-    function paintChoices() {
-      chooser.replaceChildren();
-      const options = document.createElement('div');
-      options.className = 'choices';
-      const addOption = (label, kind) => {
-        const b = document.createElement('button');
-        b.className = wall.kind === kind ? 'choice on' : 'choice';
-        b.textContent = label;
-        b.addEventListener('click', () => apply({ kind }));
-        options.append(b);
-      };
-      addOption('Del tema', 'none');
-      addOption('Fondo de WhatsApp', 'doodle');
-      const gallery = document.createElement('button');
-      gallery.className = 'choice';
-      gallery.textContent = 'Elegir en la galería de WhatsApp';
-      gallery.addEventListener('click', () => {
-        apply({ kind: 'doodle' });
-        closePanel();
-        window.pulso.action('wallpapers');
-      });
-      options.append(gallery);
-      chooser.append(heading('Fondo de todos los chats'), options, heading('Colores'));
-      const colors = document.createElement('div');
-      colors.className = 'colors';
-      for (const color of WALL_COLORS) {
-        const c = document.createElement('button');
-        c.className = wall.kind === 'color' && wall.color === color ? 'swatch on' : 'swatch';
-        c.style.background = color;
-        c.setAttribute('aria-label', `Color ${color}`);
-        c.addEventListener('click', () => apply({ kind: 'color', color }));
-        colors.append(c);
-      }
-      chooser.append(colors);
-      custom.replaceChildren(heading('Tu imagen'));
-      const file = document.createElement('input');
-      Object.assign(file, { type: 'file', accept: 'image/*', hidden: true });
-      file.addEventListener('change', async () => {
-        if (!file.files[0]) return;
-        await pickWallImage(file.files[0]);
-        window.pulso.saveWallpaper(wall);
-        redraw();
-        paintChoices();
-      });
-      const pick = document.createElement('button');
-      pick.className = wall.kind === 'image' ? 'choice on' : 'choice';
-      pick.textContent = wallUrl ? 'Cambiar imagen' : 'Elegir imagen';
-      pick.addEventListener('click', () => (wallUrl && wall.kind !== 'image' ? apply({ kind: 'image' }) : file.click()));
-      const row = document.createElement('div');
-      row.className = 'choices';
-      row.append(pick, file);
-      if (wallUrl && wall.kind !== 'image') {
-        const change = document.createElement('button');
-        change.className = 'choice';
-        change.textContent = 'Otra imagen';
-        change.addEventListener('click', () => file.click());
-        pick.textContent = 'Usar mi imagen';
-        row.append(change);
-      }
-      custom.append(row);
-      if (wall.kind !== 'none') custom.append(slider('Opacidad', 0.05, 1, 0.01, 'opacity', redraw));
-      if (wall.kind === 'image' && wallUrl) {
-        const fits = document.createElement('div');
-        fits.className = 'choices';
-        for (const [fit, label] of WALL_FITS) {
-          const b = document.createElement('button');
-          b.className = wall.fit === fit ? 'choice on' : 'choice';
-          b.textContent = label;
-          b.addEventListener('click', () => apply({ fit }));
-          fits.append(b);
-        }
-        custom.append(heading('Perfil'), fits, heading('Encuadre'),
-          slider('Zoom', 1, 4, 0.01, 'zoom', redraw),
-          slider('Horizontal', 0, 100, 1, 'x', redraw),
-          slider('Vertical', 0, 100, 1, 'y', redraw));
-      }
-    }
-    paintChoices();
-    preview.paint();
-    tab.append(preview.box, chooser, custom);
-    return tab;
-  }
-
   // Sits with WhatsApp's own icons at the bottom of the left bar.
   function addLookButton() {
     const section = document.querySelector('[data-testid="navbar-footer-section"] > div');
     if (!section || section.querySelector('#pulso-look')) return;
     const button = document.createElement('button');
     button.id = 'pulso-look';
-    button.title = 'Temas y fondos';
-    button.setAttribute('aria-label', 'Temas y fondos');
+    button.title = 'Temas';
+    button.setAttribute('aria-label', 'Temas');
     button.innerHTML = iconSvg('themes');
-    button.addEventListener('click', () => openPanel('look'));
+    button.addEventListener('click', () => openPanel('themes'));
     section.prepend(button);
   }
 
@@ -1098,8 +888,6 @@
     el.style.setProperty('--p-raised', theme.raised);
     el.style.setProperty('--p-accent', theme.accent);
     el.style.setProperty('--p-text', theme.text || '#e8f3ee');
-    el.style.setProperty('--p-chat', theme.chat);
-    el.style.setProperty('--p-on-accent', theme.onAccent);
   };
 
   function closePanel() {
@@ -1147,7 +935,7 @@
     const head = document.createElement('div');
     head.className = 'head';
     const title = document.createElement('h2');
-    title.textContent = kind === 'look' ? 'Apariencia' : 'Ajustes de Pulso';
+    title.textContent = kind === 'themes' ? 'Temas' : 'Ajustes de Pulso';
     const close = document.createElement('button');
     close.className = 'x';
     close.textContent = '×';
@@ -1157,22 +945,8 @@
     box.append(head);
     makeDraggable(box, head);
 
-    if (kind === 'look') {
-      const tabs = document.createElement('div');
-      tabs.className = 'tabs';
-      const page = document.createElement('div');
-      const show = (button, content) => {
-        for (const b of tabs.children) b.classList.toggle('on', b === button);
-        page.replaceChildren(content());
-      };
-      for (const [label, content] of [['Temas', () => themeCards(box)], ['Fondos', wallTab]]) {
-        const b = document.createElement('button');
-        b.textContent = label;
-        b.addEventListener('click', () => show(b, content));
-        tabs.append(b);
-      }
-      box.append(tabs, page);
-      show(tabs.firstElementChild, () => themeCards(box));
+    if (kind === 'themes') {
+      box.append(themeCards(box));
     } else {
       const o = await window.pulso.options();
       box.append(actionItem('Buscar actualizaciones', 'checkUpdates'), heading('General'));
@@ -1321,7 +1095,6 @@
     window.addEventListener('load', updateTheme, { once: true });
     tick();
     window.pulso.updateState().then(showUpdate); // an update found before the page loaded
-    loadWall();
     scheduleTick();
   }
 
