@@ -327,6 +327,34 @@ ipcMain.on('pulso:language', (event, code, on) => {
   settings.set('spellcheckLanguages', next);
   session.fromPartition(PARTITION).setSpellCheckerLanguages(next);
 });
+// The chat background chosen by the user. The image lives in its own file, not in settings.
+const wallpaperFile = () => path.join(app.getPath('userData'), 'wallpaper.jpg');
+const JPEG_PREFIX = 'data:image/jpeg;base64,';
+ipcMain.handle('pulso:wallpaper', () => {
+  let image = null;
+  try {
+    image = JPEG_PREFIX + fs.readFileSync(wallpaperFile()).toString('base64');
+  } catch { /* no image yet */ }
+  return { config: settings.get('wallpaper'), image };
+});
+ipcMain.on('pulso:wallpaper-config', (event, json) => {
+  try {
+    const c = JSON.parse(json);
+    settings.set('wallpaper', {
+      kind: ['none', 'doodle', 'color', 'image'].includes(c.kind) ? c.kind : 'none',
+      color: /^#[0-9a-f]{6}$/i.test(c.color) ? c.color : '#0b141a',
+      fit: ['cover', 'fill', 'center', 'contain', 'wide'].includes(c.fit) ? c.fit : 'cover',
+      opacity: Math.min(1, Math.max(0.05, Number(c.opacity) || 1)),
+      zoom: Math.min(4, Math.max(1, Number(c.zoom) || 1)),
+      x: Math.min(100, Math.max(0, Number(c.x) || 0)),
+      y: Math.min(100, Math.max(0, Number(c.y) || 0)),
+    });
+  } catch { /* ignore malformed */ }
+});
+ipcMain.on('pulso:wallpaper-image', (event, dataUrl) => {
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith(JPEG_PREFIX) || dataUrl.length > 40e6) return;
+  fs.writeFile(wallpaperFile(), Buffer.from(dataUrl.slice(JPEG_PREFIX.length), 'base64'), () => {});
+});
 ipcMain.on('pulso:action', (event, name) => {
   if (Object.hasOwn(ACTIONS, name)) ACTIONS[name]();
 });

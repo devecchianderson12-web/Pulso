@@ -21,7 +21,7 @@ día. Encima le añade integración con Windows y un diseño propio. No está af
   ella. Se puede cambiar en **Ajustes de Pulso → Aceleración por GPU** y en la bandeja.
 - **Temas:** Pulso, Estilo Telegram, Comunidad, Estilo Discord, Lava, Neón, Panel turquesa,
   Cromo rojo, Cromo púrpura, Cromo celeste, Luna azul, Consola retro, Y2K lavanda, Aero natural,
-  Colinas, Neumórfico, Cristal y Píldora, en **Perfil → Temas**. También llegan a las pantallas
+  Colinas, Neumórfico, Cristal y Píldora, en el botón **Apariencia** de la barra lateral, junto con los fondos para todos los chats: dibujos, colores o tu propia imagen, con opacidad, zoom, encuadre y perfiles Expandir, Estirar, Centrar, Ajustar y 16:9. También llegan a las pantallas
   de contraseña y de código QR. Cambian
   la disposición y las formas de la interfaz, no solo los colores.
 - **Animaciones** al enviar y recibir mensajes, cambiar de chat y abrir menús.
