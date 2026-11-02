@@ -89,6 +89,34 @@
     ${LIST_BOX}, ${CHAT_BOX} { margin: 10px 0; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; }
     ${CHAT_BOX} { margin-left: 10px; margin-right: 10px; }`;
 
+  // Chat rows drawn like glossy message bubbles. WhatsApp paints rows with these two variables,
+  // so setting them on the list keeps its own hover and selected states working.
+  const glossyRows = (base, active, border = 'rgba(255, 255, 255, .25)') => `
+    #pane-side, [data-testid="chat-list"] { --WDS-surface-default: ${base} !important; --WDS-surface-highlight: ${active} !important;
+      background: transparent !important; }
+    #pane-side [data-testid="cell-frame-container"], [data-testid="chat-list"] [data-testid="cell-frame-container"] { border: 1px solid ${border}; border-radius: 12px !important;
+      background-image: linear-gradient(180deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .03) 50%, rgba(0, 0, 0, .18)); }`;
+
+  const chromeTheme = (name, c) => ({
+    name, bar: '#4d5157', panel: c.panel, chat: c.chat, raised: c.raised, high: c.high,
+    incoming: '#4d5157', outgoing: c.out, composer: '#4d5157', accent: '#f0f1f3', selected: c.active,
+    onAccent: c.onAccent, rows: 8, highlight: 'rgba(255, 255, 255, .16)',
+    inBg: 'linear-gradient(180deg, #7a7f88, #4d5157 50%, #42464c)', outBg: c.outBg,
+    frame: 'linear-gradient(180deg, #d9dbe0, #8b8f96 50%, #c9ccd2)',
+    layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
+      ${floatingCards(22)}
+      ${glossyRows('#4d5157', c.active)}
+      ${BUBBLE} { border-radius: 12px !important; }
+      [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(255, 255, 255, .25); }
+      ${LIST_BOX}, ${CHAT_BOX} { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35); }
+      ${CHAT_BOX} { background: ${c.chatBg}; }
+      #main { background: transparent !important; }
+      ${RAIL} { background: linear-gradient(90deg, #d9dbe0, #9a9ea5) !important; }
+      ${CHAT_HEADER} { background: linear-gradient(180deg, #f2f3f5, #a9adb4 48%, #8e9299 52%, #c4c7cc) !important; }
+      ${CHAT_HEADER}, ${RAIL} { --WDS-content-default: #1c1c1c !important; --WDS-content-deemphasized: #333333 !important;
+        --WDS-content-action-default: #222222 !important; color: #1c1c1c; }`,
+  });
+
   const THEMES = {
     pulso: {
       name: 'Pulso', bar: '#0e1413', panel: '#0e1413', chat: '#0b100f', raised: '#131b19', high: '#1a2421',
@@ -128,61 +156,69 @@
         ${COMPOSER} { border-radius: 8px !important; }`,
     },
     ember: {
-      name: 'Naranja oscuro', bar: '#0a0a0a', panel: '#0a0a0a', chat: '#1c1c1c', raised: '#222222', high: '#2c2c2c',
-      incoming: '#2a2a2a', outgoing: '#e8400c', composer: '#262626', accent: '#ff5a1f', selected: '#2e2e2e',
-      onAccent: '#ffffff', rows: 12, highlight: 'rgba(255, 255, 255, .1)',
-      inBg: 'linear-gradient(135deg, #3a3a3a, #232323)', outBg: 'linear-gradient(135deg, #ff6a2b, #e8400c)',
+      name: 'Lava', bar: '#0a0a0a', panel: '#141010', chat: '#1a100c', raised: '#241814', high: '#3a2319',
+      incoming: '#33241d', outgoing: '#c8420f', composer: '#241814', accent: '#ff6a2b', selected: '#d9480f',
+      onAccent: '#ffffff', rows: 12,
+      inBg: 'linear-gradient(180deg, #4a372e, #33241d 50%, #291b15)',
+      outBg: 'linear-gradient(180deg, #ff7a3c, #d9480f 50%, #b5360a)',
+      frame: 'radial-gradient(90% 60% at 100% 100%, rgba(232, 64, 12, .45), transparent 65%), #0a0a0a',
       layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
+        ${floatingCards(20)}
+        ${glossyRows('#33241d', '#d9480f')}
         ${BUBBLE} { border-radius: 14px !important; }
-        ${CHAT_BOX} { margin: 8px 8px 0; height: calc(100% - 8px); border-radius: 18px 18px 0 0; overflow: hidden;
-          border: 1px solid rgba(255, 255, 255, .07); }
-        ${COMPOSER} { border-radius: 12px !important; border: 1px solid rgba(255, 255, 255, .09); }
+        [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(255, 170, 120, .28); }
+        ${LIST_BOX}, ${CHAT_BOX} { box-shadow: inset 0 0 0 1px rgba(255, 122, 60, .3); }
+        ${LIST_BOX} { background: linear-gradient(180deg, #1d1411, #120d0b); }
+        ${CHAT_BOX} { background: radial-gradient(110% 70% at 80% 100%, #7a2a0c, #2a140c 55%, #140c09); }
+        #main { background: transparent !important; }
+        ${CHAT_HEADER} { background: linear-gradient(180deg, #5a4034, #33241d 50%, #291b15) !important;
+          border-bottom: 1px solid rgba(255, 122, 60, .45); }
+        ${COMPOSER} { border-radius: 14px !important; background-image: linear-gradient(180deg, #4a372e, #291b15) !important;
+          border: 1px solid rgba(255, 170, 120, .28); }
         ${RAIL_ITEM} { border-radius: 10px !important; }`,
     },
     neon: {
-      name: 'Neón', bar: '#0a060e', panel: '#0f0a14', chat: '#120c18', raised: '#1b1322', high: '#241a2e',
-      incoming: '#1f1728', outgoing: '#a21caf', composer: '#1b1322', accent: '#e879f9', selected: '#a21caf',
-      onAccent: '#1a0420', rows: 12, highlight: 'rgba(217, 70, 239, .5)',
-      inBg: 'linear-gradient(135deg, #2a1f35, #1a1322)', outBg: 'linear-gradient(135deg, #e040fb, #a21caf)',
-      frame: 'radial-gradient(90% 70% at 0 0, rgba(192, 38, 211, .4), transparent 60%), #0a060e',
+      name: 'Neón', bar: '#0a060e', panel: '#0f0a14', chat: '#120c18', raised: '#1b1322', high: '#2a1b36',
+      incoming: '#170f1f', outgoing: '#5b1270', composer: '#170f1f', accent: '#e879f9', selected: '#a21caf',
+      onAccent: '#1a0420', rows: 12,
+      inBg: 'linear-gradient(135deg, #21162c, #150e1c)', outBg: 'linear-gradient(135deg, #7a1a91, #4a0f5c)',
+      frame: 'radial-gradient(90% 70% at 0 0, rgba(192, 38, 211, .45), transparent 60%), #0a060e',
       layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
         ${floatingCards(16)}
-        ${BUBBLE} { border-radius: 16px !important; }
-        ${LIST_BOX}, ${CHAT_BOX} { border: 1px solid rgba(232, 121, 249, .18); }
-        ${CHAT_BOX} { background: radial-gradient(70% 50% at 0 0, rgba(192, 38, 211, .22), transparent 70%), #120c18; }
-        #main { background: transparent !important; }
-        ${COMPOSER} { border-radius: 14px !important; border: 1px solid rgba(232, 121, 249, .2); }`,
-    },
-    teal: {
-      name: 'Panel turquesa', bar: '#1f1f1f', panel: '#383838', chat: '#232323', raised: '#2e2e2e', high: '#454545',
-      incoming: '#383838', outgoing: '#237f99', composer: '#383838', accent: '#35aecb', selected: '#232323',
-      onAccent: '#08222a', rows: 12, highlight: 'rgba(0, 0, 0, .35)',
-      layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
-        ${BUBBLE} { border-radius: 16px !important; }
-        #pane-side [data-testid="cell-frame-container"] { background: #232323 !important; border-radius: 12px !important;
-          border-left: 7px solid #35aecb; }
-        ${CHAT_HEADER} { background: #232323 !important; }
-        ${COMPOSER} { border-radius: 16px !important; }`,
-    },
-    chrome: {
-      name: 'Cromo rojo', bar: '#4d5157', panel: '#7a1f23', chat: '#8f1418', raised: '#a8282c', high: '#b33a3d',
-      incoming: '#4d5157', outgoing: '#a81a20', composer: '#4d5157', accent: '#f0f1f3', selected: '#b3262b',
-      onAccent: '#3a0a0c', rows: 8, highlight: 'rgba(255, 255, 255, .16)',
-      inBg: 'linear-gradient(180deg, #7a7f88, #4d5157 50%, #42464c)',
-      outBg: 'linear-gradient(180deg, #e2474c, #a81a20 50%, #8f1418)',
-      frame: 'linear-gradient(180deg, #d9dbe0, #8b8f96 50%, #c9ccd2)',
-      layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
-        ${floatingCards(22)}
+        ${glossyRows('#170f1f', '#a21caf', 'rgba(232, 121, 249, .55)')}
         ${BUBBLE} { border-radius: 12px !important; }
-        [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(255, 255, 255, .25); }
-        ${LIST_BOX}, ${CHAT_BOX} { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35); }
-        ${CHAT_BOX} { background: radial-gradient(120% 90% at 85% 15%, #d8292f, #7d0f12 60%, #4a080a); }
+        [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(232, 121, 249, .6);
+          box-shadow: 0 0 10px rgba(217, 70, 239, .28); }
+        ${LIST_BOX}, ${CHAT_BOX} { box-shadow: inset 0 0 0 1px rgba(232, 121, 249, .4); }
+        ${CHAT_BOX} { background:
+          linear-gradient(rgba(232, 121, 249, .07) 1px, transparent 1px) 0 0 / 100% 36px,
+          linear-gradient(90deg, rgba(232, 121, 249, .07) 1px, transparent 1px) 0 0 / 36px 100%,
+          radial-gradient(80% 60% at 50% 100%, rgba(192, 38, 211, .35), transparent 70%), #0d0812; }
         #main { background: transparent !important; }
-        ${RAIL} { background: linear-gradient(90deg, #d9dbe0, #9a9ea5) !important; }
-        ${CHAT_HEADER} { background: linear-gradient(180deg, #f2f3f5, #a9adb4 48%, #8e9299 52%, #c4c7cc) !important; }
-        ${CHAT_HEADER}, ${RAIL} { --WDS-content-default: #1c1c1c !important; --WDS-content-deemphasized: #333333 !important;
-          --WDS-content-action-default: #222222 !important; color: #1c1c1c; }`,
+        ${CHAT_HEADER} { background: linear-gradient(90deg, rgba(162, 28, 175, .55), rgba(23, 15, 31, .9)) !important;
+          border-bottom: 1px solid rgba(232, 121, 249, .6); }
+        ${COMPOSER} { border-radius: 12px !important; border: 1px solid rgba(232, 121, 249, .6);
+          box-shadow: 0 0 10px rgba(217, 70, 239, .28); }
+        ${RAIL_ITEM} { border-radius: 12px !important; }`,
     },
+    chrome: chromeTheme('Cromo rojo', {
+      panel: '#7a1f23', chat: '#8f1418', raised: '#a8282c', high: '#b33a3d', out: '#a81a20', active: '#b3262b',
+      onAccent: '#3a0a0c',
+      outBg: 'linear-gradient(180deg, #e2474c, #a81a20 50%, #8f1418)',
+      chatBg: 'radial-gradient(120% 90% at 85% 15%, #d8292f, #7d0f12 60%, #4a080a)',
+    }),
+    chromepurple: chromeTheme('Cromo púrpura', {
+      panel: '#4f2478', chat: '#5b1a8f', raised: '#6d33a3', high: '#7d45b3', out: '#6a22a8', active: '#7a2cc0',
+      onAccent: '#240a3a',
+      outBg: 'linear-gradient(180deg, #a35ce6, #6a22a8 50%, #561a8f)',
+      chatBg: 'radial-gradient(120% 90% at 85% 15%, #9a3fe0, #4f167d 60%, #2d0a4a)',
+    }),
+    chromeblue: chromeTheme('Cromo celeste', {
+      panel: '#1c5a80', chat: '#14689a', raised: '#2a78a8', high: '#3a8ab8', out: '#1a78b0', active: '#1f8fcf',
+      onAccent: '#06263a',
+      outBg: 'linear-gradient(180deg, #5cc0f0, #1a78b0 50%, #14689a)',
+      chatBg: 'radial-gradient(120% 90% at 85% 15%, #3db4ea, #0f5f92 60%, #083a5c)',
+    }),
     luna: {
       name: 'Luna azul', bar: '#0a58d0', panel: '#f4f7ff', chat: '#7ec0ee', raised: '#ece9d8', high: '#dfe6fa',
       incoming: '#ffffff', outgoing: '#d9fdd3', composer: '#ffffff', accent: '#2a8a2f', selected: '#316ac5',
