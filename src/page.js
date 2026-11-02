@@ -82,19 +82,22 @@
   const WALLPAPER = '[data-testid^="conversation-background"]';
   const RAIL = '.two > header[data-testid="chatlist-header"]';
   const LIST_HEADER = '.two > div > header[data-testid="chatlist-header"]';
-  const CHAT_HEADER = 'header[data-testid="conversation-header"]';
+  const CHAT_HEADER = 'header[data-testid="conversation-header"], [data-testid^="drawer-"] header';
+  const LEFT_DRAWER = '[data-testid="drawer-left"]';
+  const ROWS = '#pane-side [data-testid="cell-frame-container"], [data-testid^="drawer-"] [data-testid="cell-frame-container"], [data-testid="dropdown"] [data-testid="cell-frame-container"]';
   const PILLS = `${BUBBLE} { border-radius: 20px !important; }
     ${TAILS}, ${WALLPAPER} { display: none !important; }`;
   const floatingCards = (radius) => `
     ${LIST_BOX}, ${CHAT_BOX} { margin: 10px 0; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; }
-    ${CHAT_BOX} { margin-left: 10px; margin-right: 10px; }`;
+    ${CHAT_BOX} { margin-left: 10px; margin-right: 10px; }
+    ${LEFT_DRAWER} { margin-top: 10px; margin-bottom: 10px; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; }`;
 
   // Chat rows drawn like glossy message bubbles. WhatsApp paints rows with these two variables,
   // so setting them on the list keeps its own hover and selected states working.
   const glossyRows = (base, active, border = 'rgba(255, 255, 255, .25)') => `
-    #pane-side, [data-testid="chat-list"] { --WDS-surface-default: ${base} !important; --WDS-surface-highlight: ${active} !important;
-      background: transparent !important; }
-    #pane-side [data-testid="cell-frame-container"], [data-testid="chat-list"] [data-testid="cell-frame-container"] { border: 1px solid ${border}; border-radius: 12px !important;
+    #pane-side { background: transparent !important; }
+    ${ROWS} { --WDS-surface-default: ${base} !important; --WDS-surface-highlight: ${active} !important;
+      border: 1px solid ${border}; border-radius: 12px !important;
       background-image: linear-gradient(180deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .03) 50%, rgba(0, 0, 0, .18)); }`;
 
   const chromeTheme = (name, c) => ({
@@ -220,7 +223,7 @@
       chatBg: 'radial-gradient(120% 90% at 85% 15%, #3db4ea, #0f5f92 60%, #083a5c)',
     }),
     luna: {
-      name: 'Luna azul', bar: '#0058e6', panel: '#ffffff', chat: '#7ec0ee', raised: '#ece9d8', high: '#d6dff7',
+      name: 'Luna azul', bar: '#0058e6', panel: '#dfe2ea', chat: '#7ec0ee', raised: '#ece9d8', high: '#d6dff7',
       incoming: '#ffffff', outgoing: '#e3f7d8', composer: '#ffffff', accent: '#3a9a3a', selected: '#316ac5',
       onAccent: '#ffffff', rows: 0, highlight: 'rgba(49, 106, 197, .24)', text: '#000000', muted: '#3f4a63',
       frame: '#0054e3',
@@ -230,6 +233,8 @@
         [data-testid="msg-container"] > div:first-of-type { border: 1px solid #7f9db9; }
         /* Two windows: blue frame, beige client area, hard corners. */
         ${LIST_BOX}, ${CHAT_BOX} { margin: 0 0 4px 4px; height: calc(100% - 4px); border: 3px solid #0831d9; border-top-width: 0;
+          border-radius: 0 0 3px 3px; overflow: hidden; }
+        ${LEFT_DRAWER} { margin-bottom: 4px; height: calc(100% - 4px); margin-left: 68px; border: 3px solid #0831d9; border-top-width: 0;
           border-radius: 0 0 3px 3px; overflow: hidden; }
         ${CHAT_BOX} { margin-right: 4px;
           background: radial-gradient(150% 52% at 25% 100%, #6fb83a 60%, #5aa52c 61%, transparent 62%),
@@ -245,6 +250,8 @@
         [data-testid="chat-list-search-container"] div { border-radius: 0 !important; }
         [role="tab"] { border-radius: 3px !important; border: 1px solid #003c74 !important;
           background: linear-gradient(180deg, #ffffff, #f0efe6 80%, #d6d0c5) !important; color: #000000 !important; }
+        [role="tab"] * { color: #000000 !important; }
+        \${LIST_HEADER} header { background: transparent !important; }
         #pane-side [data-testid="cell-frame-container"] { border-radius: 0 !important; }
         ::-webkit-scrollbar { width: 16px !important; height: 16px !important; }
         ::-webkit-scrollbar-track { background: #f1eee3 !important; }
@@ -264,6 +271,9 @@
       'surface-elevated-emphasized': t.high, 'systems-bubble-surface-incoming': t.incoming,
       'systems-bubble-surface-outgoing': t.outgoing, 'systems-chat-surface-composer': t.composer,
       'systems-chat-surface-tray': t.panel,
+      // Date chips and system notices between messages.
+      'systems-bubble-surface-system': t.raised, 'systems-bubble-surface-e2e': t.raised,
+      'systems-bubble-surface-business': t.raised,
     };
     const vars = Object.entries(colors).map(([k, c]) => `--WDS-${k}: ${c} !important; --WDS-${k}-RGB: ${rgb(c)} !important;`);
     vars.push(`--WDS-surface-highlight: ${t.highlight || `rgba(${rgb(t.accent)}, .08)`} !important;`);
@@ -302,12 +312,16 @@
   let themeSelectors = 'body.dark';
   // Bubbles paint a solid variable, so gradients need WhatsApp's own bubble classes (found below).
   let bubbleClasses = { in: new Set(), out: new Set() };
+  let textClasses = new Set();
   const bubbleRule = (classes, background) => (background && classes.size
     ? `${[...classes].join(', ')} { background: ${background} !important; }` : '');
   const writeTheme = () => {
     themeStyle.textContent = `${themeSelectors} {${themeVars(theme)}}
       ${bubbleRule(bubbleClasses.in, theme.inBg)}
-      ${bubbleRule(bubbleClasses.out, theme.outBg)}`;
+      ${bubbleRule(bubbleClasses.out, theme.outBg)}
+      ${theme.text && textClasses.size ? `${[...textClasses].map((s) => `#main ${s}, #pane-side ${s}`).join(', ')} {
+        --WDS-content-default: ${theme.text} !important; --WDS-content-action-default: ${theme.text} !important;
+        --WDS-content-deemphasized: ${theme.muted} !important; }` : ''}`;
   };
   function setTheme(id, save) {
     theme = THEMES[id] || THEMES.pulso;
@@ -329,6 +343,7 @@
     ruleCount = count;
     const selectors = new Set();
     bubbleClasses = { in: new Set(), out: new Set() };
+    textClasses = new Set();
     const walk = (rules) => {
       for (const r of rules) {
         if (r.cssRules && r.cssRules.length) walk(r.cssRules);
@@ -336,6 +351,7 @@
           const bg = r.style.getPropertyValue('background-color');
           if (bg.includes('bubble-surface-incoming')) bubbleClasses.in.add(r.selectorText);
           if (bg.includes('bubble-surface-outgoing')) bubbleClasses.out.add(r.selectorText);
+          if (r.style.getPropertyValue('--WDS-content-default')) textClasses.add(r.selectorText.split(',')[0]);
         }
         if (r.style && r.selectorText && r.style.getPropertyValue('--WDS-accent')) {
           for (const s of r.selectorText.split(',')) {
