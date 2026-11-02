@@ -51,26 +51,27 @@
   `);
 
   // WhatsApp paints the login screen with fixed light colors, so restyle it while it's up.
-  const loginStyle = makeStyle(`
-    html, body { background: #0b100f !important; }
-    svg:not(#pulso-update svg):not(#pulso-panel svg) { color: #9fb5ac !important; }
+  const loginCss = (t, a) => `
+    html, body { background: ${t.screen || t.frame || t.bar} !important; }
+    svg:not(#pulso-update svg):not(#pulso-panel svg) { color: ${t.muted || '#9fb5ac'} !important; }
     [aria-checked="true"], [aria-checked="true"] * {
-      background-color: #1fdf8a !important; border-color: #1fdf8a !important; color: #04140c !important;
+      background-color: ${t.accent} !important; border-color: ${t.accent} !important; color: ${t.onAccent} !important;
     }
     body *:not(canvas):not(svg):not(svg *):not([data-pulso-qr]):not([data-pulso-qr] *):not([data-pulso-card]):not([aria-checked="true"]):not([aria-checked="true"] *):not(#pulso-update):not(#pulso-update *):not(#pulso-panel):not(#pulso-panel *) {
-      background-color: transparent !important; color: #e8f3ee !important;
-      border-color: rgba(31, 223, 138, .22) !important;
+      background-color: transparent !important; color: ${t.text || '#e8f3ee'} !important;
+      border-color: rgba(${a}, .22) !important;
     }
     [data-pulso-card] {
-      background: linear-gradient(160deg, #131b19, #0e1413) !important; border-radius: 24px !important;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, .45), 0 0 0 1px rgba(31, 223, 138, .14) !important;
+      background: ${t.card || t.raised} !important; border-radius: 24px !important;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .45), 0 0 0 1px rgba(${a}, .14) !important;
     }
     [data-pulso-qr] {
       background: #fff !important; border-radius: 18px !important; padding: 14px !important;
-      box-shadow: 0 0 0 4px rgba(31, 223, 138, .25), 0 0 32px rgba(31, 223, 138, .25) !important;
+      box-shadow: 0 0 0 4px rgba(${a}, .25), 0 0 32px rgba(${a}, .25) !important;
     }
-    a, a * { color: #1fdf8a !important; }
-  `);
+    a, a * { color: ${t.accent} !important; }
+  `;
+  const loginStyle = makeStyle('');
 
   // Shared pieces of the themes' layouts. WhatsApp's data-testid names are stable, its class names aren't.
   const LIST_BOX = '.two > div:has(> #side)';
@@ -80,6 +81,7 @@
   const RAIL_ITEM = '[data-testid="navbar-primary-section"] span > div, [data-testid="navbar-primary-section"] button';
   const COMPOSER = '[data-testid="compose-box"] span > div > div > div';
   const WALLPAPER = '[data-testid^="conversation-background"]';
+  const LOCK = '[data-testid="lock-screen-landing-window"]';
   const RAIL = '.two > header[data-testid="chatlist-header"]';
   const LIST_HEADER = '.two > div > header[data-testid="chatlist-header"]';
   const CHAT_HEADER = 'header[data-testid="conversation-header"], [data-testid^="drawer-"] header';
@@ -119,6 +121,17 @@
       ${CHAT_HEADER}, ${RAIL} { --WDS-content-default: #1c1c1c !important; --WDS-content-deemphasized: #333333 !important;
         --WDS-content-action-default: #222222 !important; color: #1c1c1c; }`,
   });
+
+  const noWallpaper = `${TAILS}, ${WALLPAPER} { display: none !important; }`;
+  // Panels see through to the frame, so #main and the lists stop painting their own color.
+  const seeThrough = `#main, #side, #pane-side { background: transparent !important; }
+    ${CHAT_BOX}, ${LIST_BOX} { background: transparent; }`;
+  const headerText = (color, muted) => `${CHAT_HEADER}, ${LIST_HEADER}, ${RAIL} {
+    --WDS-content-default: ${color} !important; --WDS-content-deemphasized: ${muted} !important;
+    --WDS-content-action-default: ${color} !important; color: ${color}; }`;
+  const CLOUDS = `radial-gradient(9% 7% at 20% 14%, #fff 60%, transparent 62%), radial-gradient(13% 8% at 27% 16%, #fff 60%, transparent 62%),
+    radial-gradient(7% 5% at 15% 17%, #fff 60%, transparent 62%), radial-gradient(10% 6% at 70% 9%, #fff 60%, transparent 62%),
+    radial-gradient(14% 7% at 78% 11%, #fff 60%, transparent 62%)`;
 
   const THEMES = {
     pulso: {
@@ -258,6 +271,157 @@
         body.dark ::-webkit-scrollbar-thumb { border-radius: 2px !important; border: 1px solid #fff;
           background: linear-gradient(90deg, #cfdcfb, #a8bff2 60%, #8faae6) !important; }`,
     },
+    retro: {
+      name: 'Consola retro', bar: '#d8d3bd', panel: '#d9d4be', chat: '#e4e0cc', raised: '#c7c2aa', high: '#b9d08c',
+      incoming: '#f1eedd', outgoing: '#c6e486', composer: '#f1eedd', accent: '#d42f7d', selected: '#a9c864',
+      onAccent: '#ffffff', rows: 4, highlight: 'rgba(120, 160, 40, .35)', text: '#25301f', muted: '#566049',
+      font: 'Consolas, "Lucida Console", monospace', lockRadius: 8, card: 'linear-gradient(180deg, #e6e1cb, #cfcab2)',
+      frame: `linear-gradient(#2c3d42 1px, transparent 1px) 0 0 / 26px 26px, linear-gradient(90deg, #2c3d42 1px, transparent 1px) 0 0 / 26px 26px, #1c2a2e`,
+      layout: `${noWallpaper}
+        ${floatingCards(10)}
+        ${BUBBLE} { border-radius: 3px !important; }
+        [data-testid="msg-container"] > div:first-of-type { border: 1px solid #8b8a6e; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 1px 1px 0 #a8a68c; }
+        ${LIST_BOX}, ${CHAT_BOX} { border: 2px solid #8b8a6e; box-shadow: inset 0 0 0 2px #f1eedd; }
+        ${CHAT_BOX} { background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(60, 70, 40, .05) 3px 4px), #e4e0cc; }
+        #main { background: transparent !important; }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: linear-gradient(180deg, #1d3a12, #2d5a1a 60%, #1d3a12) !important; border-bottom: 2px solid #8b8a6e; }
+        ${LIST_HEADER} header { background: transparent !important; }
+        ${RAIL} { background: linear-gradient(90deg, #e6e1cb, #bdb8a0) !important; border-right: 2px solid #8b8a6e; }
+        ${CHAT_HEADER}, ${LIST_HEADER} { --WDS-content-default: #c6f07a !important; --WDS-content-deemphasized: #9ccf5a !important;
+          --WDS-content-action-default: #c6f07a !important; color: #c6f07a; }
+        ${RAIL_ITEM} { border-radius: 4px !important; }
+        ${ROWS} { --WDS-surface-default: #e9e5d2 !important; --WDS-surface-highlight: #b9d08c !important; border: 1px solid #8b8a6e; border-radius: 4px !important;
+          box-shadow: inset 0 1px 0 #fff, 1px 1px 0 #a8a68c; }
+        #pane-side { background: transparent !important; }
+        ${COMPOSER} { border-radius: 4px !important; border: 1px solid #8b8a6e; box-shadow: inset 1px 1px 2px rgba(0, 0, 0, .25); }
+        [role="tab"] { border-radius: 3px !important; border: 1px solid #8b8a6e !important; }`,
+    },
+    y2k: {
+      name: 'Y2K lavanda', bar: '#a79bf2', panel: '#ece8ff', chat: '#f6f4ff', raised: '#d9d3ff', high: '#c9c0ff',
+      incoming: '#ffffff', outgoing: '#d5ccff', composer: '#ffffff', accent: '#8a3fd1', selected: '#c9b6ff',
+      onAccent: '#ffffff', rows: 24, highlight: 'rgba(198, 111, 214, .3)', text: '#33278f', muted: '#5f53b8',
+      font: 'Bahnschrift, "Segoe UI", sans-serif', lockRadius: 28, card: 'linear-gradient(180deg, #f6f4ff, #d9d3ff)',
+      inBg: 'linear-gradient(180deg, #ffffff, #eeeaff)', outBg: 'linear-gradient(180deg, #e7e1ff, #c6bbff)',
+      frame: 'linear-gradient(135deg, #a79bf2, #6f62d8 45%, #b9b0f5)',
+      layout: `${noWallpaper}
+        ${floatingCards(26)}
+        ${BUBBLE} { border-radius: 18px !important; }
+        [data-testid="msg-container"] > div:first-of-type { border: 2px solid #7d6be0; }
+        ${LIST_BOX}, ${CHAT_BOX} { border: 3px solid #efeaff; box-shadow: 0 0 0 2px #6f62d8; }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: linear-gradient(180deg, #a79bf2, #6a5ae0 55%, #8f80ea) !important;
+          clip-path: polygon(0 0, 100% 0, calc(100% - 26px) 100%, 0 100%); }
+        ${LIST_HEADER} header { background: transparent !important; }
+        ${RAIL} { background: linear-gradient(90deg, #d9d3ff, #a79bf2) !important; }
+        ${headerText('#ffffff', '#ecE8ff')}
+        ${RAIL_ITEM} { border-radius: 50% !important; }
+        ${glossyRows('#d5ccff', '#c66fd6', '#7d6be0')}
+        ${ROWS} { border-width: 2px; border-radius: 24px !important; }
+        ${COMPOSER} { border-radius: 24px !important; border: 2px solid #7d6be0; }
+        [role="tab"] { border-radius: 99px !important; border: 2px solid #7d6be0 !important; background: linear-gradient(180deg, #d9d3ff, #a79bf2) !important; }`,
+    },
+    aero: {
+      name: 'Aero natural', bar: '#bfe3f7', panel: '#ffffffc8', chat: '#d7eefb', raised: '#eaf7fe', high: '#cfeaf9',
+      incoming: '#ffffffd9', outgoing: '#d3f0b4', composer: '#ffffffe6', accent: '#2f8f3a', selected: '#a9dcf5',
+      onAccent: '#ffffff', rows: 12, highlight: 'rgba(90, 180, 235, .32)', text: '#173a52', muted: '#44677f',
+      font: '"Segoe UI", Tahoma, sans-serif', lockRadius: 16, card: 'linear-gradient(180deg, #ffffffe6, #dff2fc)',
+      inBg: 'linear-gradient(180deg, #ffffff, #e6f5fd 50%, #d6eefa 51%, #edf8fe)',
+      outBg: 'linear-gradient(180deg, #edfbd9, #c9eda0 50%, #b6e486 51%, #dbf4bc)',
+      frame: `${CLOUDS}, radial-gradient(150% 40% at 50% 112%, #62b23c 60%, transparent 61%), linear-gradient(180deg, #4aa6e8, #bfe6fa 70%, #e8f7fe)`,
+      layout: `${noWallpaper}
+        ${floatingCards(14)}
+        ${seeThrough}
+        ${LIST_BOX} { background: #ffffffa8; }
+        ${CHAT_BOX} { background: #ffffff33; }
+        ${BUBBLE} { border-radius: 12px !important; }
+        [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(70, 140, 190, .5); }
+        ${LIST_BOX}, ${CHAT_BOX} { border: 1px solid rgba(255, 255, 255, .9); box-shadow: 0 8px 24px rgba(30, 90, 130, .3), inset 0 0 0 1px rgba(90, 160, 210, .4); }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: linear-gradient(180deg, #ffffffcc, #d6eefae6 50%, #b9e0f5e6 51%, #e2f4fde6) !important; }
+        ${LIST_HEADER} header { background: transparent !important; }
+        ${RAIL} { background: linear-gradient(90deg, #ffffff99, #bfe3f7aa) !important; }
+        ${RAIL_ITEM} { border-radius: 50% !important; }
+        ${glossyRows('#ffffffb0', '#a9dcf5', 'rgba(90, 160, 210, .55)')}
+        ${COMPOSER} { border-radius: 12px !important; border: 1px solid rgba(70, 140, 190, .5); }
+        [role="tab"] { border-radius: 8px !important; background: linear-gradient(180deg, #edfbd9, #b6e486) !important; }`,
+    },
+    hills: {
+      name: 'Colinas', bar: '#a9d36c', panel: '#eaf4d9', chat: '#7cc1ee', raised: '#f3f9e8', high: '#d9ecbc',
+      incoming: '#ffffffe6', outgoing: '#dcf2ad', composer: '#ffffff', accent: '#3d8a1e', selected: '#bfe08a',
+      onAccent: '#ffffff', rows: 10, highlight: 'rgba(120, 180, 50, .3)', text: '#1b3312', muted: '#4b6339',
+      lockRadius: 14, card: 'linear-gradient(180deg, #ffffffcc, #e4f2cf)',
+      frame: 'linear-gradient(180deg, #c3e293, #93c655)',
+      screen: `${CLOUDS}, radial-gradient(90% 34% at 15% 72%, #a6c63a 60%, transparent 61%),
+        radial-gradient(120% 50% at 70% 100%, #8fb52a 62%, #7fa322 63%, transparent 64%), linear-gradient(180deg, #2c7fdc, #79bdf0 62%)`,
+      layout: `${noWallpaper}
+        ${floatingCards(12)}
+        ${BUBBLE} { border-radius: 10px !important; }
+        [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(70, 120, 40, .45); }
+        ${LIST_BOX}, ${CHAT_BOX} { border: 1px solid #5f8f2c; }
+        ${CHAT_BOX} { background: ${CLOUDS}, radial-gradient(90% 30% at 15% 88%, #a6c63a 60%, transparent 61%),
+          radial-gradient(120% 40% at 70% 108%, #8fb52a 62%, #7fa322 63%, transparent 64%), linear-gradient(180deg, #2c7fdc, #a4d3f4 78%); }
+        #main { background: transparent !important; }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: linear-gradient(180deg, #d7ecb4, #a9d36c 50%, #93c655 51%, #c3e293) !important; border-bottom: 1px solid #5f8f2c; }
+        ${LIST_HEADER} header { background: transparent !important; }
+        ${RAIL} { background: linear-gradient(90deg, #c3e293, #93c655) !important; }
+        ${RAIL_ITEM} { border-radius: 8px !important; }
+        ${glossyRows('#f6fbec', '#bfe08a', 'rgba(95, 143, 44, .5)')}
+        ${COMPOSER} { border-radius: 8px !important; border: 1px solid #5f8f2c; }`,
+    },
+    neumorph: {
+      name: 'Neumórfico', bar: '#22252b', panel: '#22252b', chat: '#22252b', raised: '#292d34', high: '#2e323a',
+      incoming: '#22252b', outgoing: '#e5484d', composer: '#22252b', accent: '#e5484d', selected: '#2e323a',
+      onAccent: '#ffffff', rows: 18, highlight: 'rgba(0, 0, 0, .18)', lockRadius: 26, card: '#22252b',
+      layout: `${noWallpaper}
+        ${BUBBLE} { border-radius: 8px !important; }
+        [data-testid="msg-container"] > div:first-of-type { box-shadow: 5px 5px 10px #16181c, -3px -3px 8px #2e323a; }
+        ${ROWS} { border-radius: 18px !important; box-shadow: 5px 5px 10px #16181c, -3px -3px 8px #2e323a; }
+        #pane-side { background: transparent !important; }
+        ${CHAT_HEADER} { box-shadow: 0 6px 12px #16181c; }
+        ${RAIL_ITEM} { border-radius: 50% !important; }
+        [data-testid="navbar-primary-section"] span > div { box-shadow: 3px 3px 6px #16181c, -2px -2px 5px #2e323a; }
+        ${COMPOSER} { border-radius: 26px !important; box-shadow: inset 4px 4px 8px #16181c, inset -3px -3px 7px #2e323a; }
+        [role="tab"] { box-shadow: 3px 3px 6px #16181c, -2px -2px 5px #2e323a; border-color: transparent !important; }`,
+    },
+    crystal: {
+      name: 'Cristal', bar: '#1a2450', panel: '#0d162c80', chat: '#1a2348', raised: '#2a2f5a', high: '#3a3f6e',
+      incoming: '#ffffff1f', outgoing: '#5b3bff', composer: '#ffffff14', accent: '#5b7cff', selected: '#ffffff26',
+      onAccent: '#ffffff', rows: 0, highlight: 'rgba(255, 255, 255, .12)', lockRadius: 20, card: '#0d162cb0',
+      outBg: 'linear-gradient(135deg, #3a6bff, #9a2bff 55%, #ff1f5a)',
+      frame: 'radial-gradient(80% 70% at 100% 100%, #c2182f, transparent 70%), radial-gradient(70% 60% at 0 100%, #7a1236, transparent 70%), radial-gradient(70% 60% at 30% 0, #2f6fa8, transparent 70%), #101a3c',
+      layout: `${noWallpaper}
+        ${floatingCards(18)}
+        ${seeThrough}
+        ${LIST_BOX} { background: #0d162c70; }
+        ${CHAT_BOX} { background: #0d162c40; }
+        ${LIST_BOX}, ${CHAT_BOX} { border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 20px 50px rgba(0, 0, 0, .35); }
+        ${BUBBLE} { border-radius: 14px !important; }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: #ffffff0f !important; border-bottom: 1px solid rgba(255, 255, 255, .12); }
+        ${LIST_HEADER} header { background: transparent !important; }
+        ${RAIL} { background: transparent !important; }
+        #pane-side { --WDS-surface-default: transparent !important; }
+        #pane-side [data-testid="cell-frame-container"] { border-bottom: 1px solid rgba(255, 255, 255, .08); border-radius: 0 !important; }
+        ${COMPOSER} { border-radius: 12px !important; }`,
+    },
+    pill: {
+      name: 'Píldora', bar: '#2c35a0', panel: '#ffffff1f', chat: '#2a3496', raised: '#3a44b0', high: '#4a54c4',
+      incoming: '#ffffff26', outgoing: '#0d0f1ccc', composer: '#ffffff1f', accent: '#ffffff', selected: '#ffffff33',
+      onAccent: '#1b2a7a', rows: 22, highlight: 'rgba(255, 255, 255, .16)', lockRadius: 40, card: '#ffffff26',
+      frame: 'radial-gradient(70% 45% at 70% 108%, #d4502e, transparent 70%), radial-gradient(60% 50% at 100% 0, #cfc8c4, transparent 70%), radial-gradient(70% 60% at 25% 45%, #2433b8, transparent 75%), #1b2a7a',
+      layout: `${noWallpaper}
+        ${floatingCards(30)}
+        ${seeThrough}
+        ${LIST_BOX} { background: #ffffff14; }
+        ${CHAT_BOX} { background: #0d0f1c30; }
+        ${LIST_BOX}, ${CHAT_BOX} { border: 2px solid rgba(255, 255, 255, .28); }
+        ${RAIL} { margin: 10px 0 10px 8px; height: calc(100% - 20px); width: 56px; border-radius: 28px; overflow: hidden; padding-left: 8px;
+          background: linear-gradient(180deg, #ffffff40, #ffffff12) !important; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35); }
+        ${RAIL_ITEM} { border-radius: 50% !important; }
+        ${BUBBLE} { border-radius: 22px !important; }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: transparent !important; }
+        ${LIST_HEADER} header { background: transparent !important; }
+        ${glossyRows('#ffffff14', '#ffffff40', 'rgba(255, 255, 255, .22)')}
+        ${ROWS} { border-radius: 22px !important; }
+        ${COMPOSER} { border-radius: 30px !important; }`,
+    },
   };
 
   const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ');
@@ -300,6 +464,17 @@
       body.dark ::-webkit-scrollbar-thumb { background-color: rgba(${a}, .18) !important; border-radius: 99px; }
       body.dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(${a}, .32) !important; }
       body.dark .two { background: ${theme.frame || theme.bar} !important; }
+      /* The password lock screen takes the theme too. */
+      ${LOCK} { background: ${theme.screen || theme.frame || theme.bar} !important; }
+      ${LOCK} main { background: ${theme.card || theme.raised} !important; border-radius: ${theme.lockRadius ?? 24}px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, .4); border: 1px solid rgba(${a}, .3); }
+      ${LOCK} span, ${LOCK} div, ${LOCK} button { color: ${theme.text || '#e8f3ee'} !important; }
+      ${LOCK} input { background: ${theme.composer} !important; color: ${theme.text || '#e8f3ee'} !important;
+        border: 1px solid rgba(${a}, .5) !important; border-radius: ${Math.min(theme.lockRadius ?? 10, 10)}px; }
+      ${LOCK} main button:not(:has(svg)) { background: ${theme.accent} !important; color: ${theme.onAccent} !important;
+        border-radius: ${Math.min(theme.lockRadius ?? 99, 99)}px; }
+      ${LOCK} main button:not(:has(svg)) * { color: ${theme.onAccent} !important; }
+      ${theme.font ? `#app, #app *, #pulso-panel, #pulso-panel * { font-family: ${theme.font}, "Segoe UI Emoji" !important; }` : ''}
       ${theme.layout || ''}
     `;
   }
@@ -326,6 +501,7 @@
   function setTheme(id, save) {
     theme = THEMES[id] || THEMES.pulso;
     applyThemeShape();
+    loginStyle.textContent = loginCss(theme, rgb(theme.accent));
     writeTheme();
     if (save) window.pulso.saveTheme(id, theme.bar);
   }
@@ -598,7 +774,7 @@
 
   const panelStyle = makeStyle(`
     #pulso-panel { position: fixed; inset: 0; z-index: 2147483001; display: grid; place-items: center;
-      background: rgba(0, 0, 0, .5); font: 14px/1.4 "Segoe UI", system-ui, sans-serif; color: #e8f3ee; }
+      background: rgba(0, 0, 0, .5); font: 14px/1.4 "Segoe UI", system-ui, sans-serif; color: var(--p-text); }
     #pulso-panel .box { width: min(480px, calc(100vw - 40px)); max-height: calc(100vh - 80px); overflow-y: auto;
       box-sizing: border-box; padding: 20px; border-radius: 18px; background: var(--p-raised);
       border: 1px solid rgba(255, 255, 255, .08); box-shadow: 0 20px 56px rgba(0, 0, 0, .5); }
@@ -693,6 +869,7 @@
   const paintPanel = (el) => {
     el.style.setProperty('--p-raised', theme.raised);
     el.style.setProperty('--p-accent', theme.accent);
+    el.style.setProperty('--p-text', theme.text || '#e8f3ee');
   };
 
   function closePanel() {

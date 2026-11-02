@@ -62,6 +62,38 @@
   [data-theme="chromeblue"] { --accent: #1f8fcf; }
   [data-theme^="chrome"] .pill { color: #fff; }
 
+  [data-theme="retro"] { --accent: #e83e8c; --fg: #25301f; font-family: Consolas, monospace; }
+  [data-theme="retro"] .bar { background: linear-gradient(180deg, #e6e1cb, #cfcab2); border-bottom: 1px solid #8b8a6e; }
+  [data-theme="retro"] .brand span { font-family: Consolas, monospace; letter-spacing: 1px; }
+  [data-theme="retro"] .controls { align-items: center; gap: 4px; padding-right: 8px; }
+  [data-theme="retro"] .controls button { width: 28px; height: 22px; color: #25301f; border: 1px solid #8b8a6e; border-radius: 4px;
+    background: linear-gradient(180deg, #f1eedd, #c7c2aa); box-shadow: inset 0 1px 0 #fff; }
+  [data-theme="retro"] .controls #close { background: linear-gradient(180deg, #f39bc3, #e83e8c); color: #fff; }
+  [data-theme="y2k"] { --accent: #c66fd6; --fg: #ffffff; font-family: Bahnschrift, "Segoe UI", sans-serif; }
+  [data-theme="y2k"] .bar { background: linear-gradient(180deg, #d9d3ff, #8f80ea 55%, #a79bf2); }
+  [data-theme="y2k"] .brand span { font-family: Bahnschrift, "Segoe UI", sans-serif; text-shadow: 0 1px 2px #3b2fa8; }
+  [data-theme="y2k"] .controls { align-items: center; gap: 5px; padding-right: 10px; }
+  [data-theme="y2k"] .controls button { width: 28px; height: 28px; border-radius: 50%; color: #fff; border: 2px solid #efeaff;
+    background: radial-gradient(circle at 35% 25%, #d7d0ff, #7d6be0 65%); }
+  [data-theme="y2k"] .controls #close { background: radial-gradient(circle at 35% 25%, #f3c3f7, #b04fc4 65%); }
+  [data-theme="aero"], [data-theme="hills"] { --accent: #3a9a3a; --fg: #173a52; }
+  [data-theme="aero"] .bar { background: linear-gradient(180deg, #eaf7fe, #bfe3f7 50%, #a5d6f2 51%, #d3edfb); }
+  [data-theme="hills"] .bar { background: linear-gradient(180deg, #d7ecb4, #a9d36c 50%, #93c655 51%, #c3e293); }
+  [data-theme="aero"] .controls, [data-theme="hills"] .controls { padding-right: 8px; align-items: flex-start; }
+  [data-theme="aero"] .controls button, [data-theme="hills"] .controls button { width: 32px; height: 20px; color: #173a52;
+    border: 1px solid rgba(40, 80, 110, .5); border-top: 0; background: linear-gradient(180deg, #fff, #cfe6f3 50%, #b4d6ea 51%, #e0f0f9); }
+  [data-theme="aero"] .controls #close, [data-theme="hills"] .controls #close { width: 46px; color: #fff; border-radius: 0 0 4px 0;
+    background: linear-gradient(180deg, #f2a48e, #d9492b 50%, #c23214 51%, #e6714f); }
+  [data-theme="neumorph"] { --accent: #e5484d; }
+  [data-theme="neumorph"] .controls { align-items: center; gap: 8px; padding-right: 10px; }
+  [data-theme="neumorph"] .controls button { width: 28px; height: 28px; border-radius: 50%; color: #c8ccd4; background: #22252b;
+    box-shadow: 3px 3px 6px #16181c, -2px -2px 5px #2e323a; }
+  [data-theme="neumorph"] .controls button:hover { background: #22252b; color: #e5484d; }
+  [data-theme="neumorph"] .controls #close:hover { background: #22252b; color: #e5484d; }
+  [data-theme="crystal"], [data-theme="pill"] { --accent: #5b7cff; }
+  [data-theme="crystal"] .bar { background: linear-gradient(90deg, #0c1a3f, #27305e 45%, #5a2547); }
+  [data-theme="pill"] .bar { background: linear-gradient(90deg, #1b2a7a, #2c35a0 55%, #7f7a8c); }
+
   /* Luna azul: glossy blue title bar with beveled caption buttons. */
   [data-theme="luna"] { font: 700 13px/1 Tahoma, "Segoe UI", sans-serif; }
   [data-theme="luna"] .bar {

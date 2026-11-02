@@ -20,7 +20,9 @@ día. Encima le añade integración con Windows y un diseño propio. No está af
   mantenimiento breve cuando la página está inactiva. Si la GPU falla al arrancar, sigue sin
   ella. Se puede cambiar en **Ajustes de Pulso → Aceleración por GPU** y en la bandeja.
 - **Temas:** Pulso, Estilo Telegram, Comunidad, Estilo Discord, Lava, Neón, Panel turquesa,
-  Cromo rojo, Cromo púrpura, Cromo celeste y Luna azul, en **Perfil → Temas**. Cambian
+  Cromo rojo, Cromo púrpura, Cromo celeste, Luna azul, Consola retro, Y2K lavanda, Aero natural,
+  Colinas, Neumórfico, Cristal y Píldora, en **Perfil → Temas**. También llegan a las pantallas
+  de contraseña y de código QR. Cambian
   la disposición y las formas de la interfaz, no solo los colores.
 - **Animaciones** al enviar y recibir mensajes, cambiar de chat y abrir menús.
 - **Todo WhatsApp Web:** chats, grupos, comunidades, canales, estados, archivos, notas de voz,
