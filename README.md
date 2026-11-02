@@ -19,7 +19,8 @@ día. Encima le añade integración con Windows y un diseño propio. No está af
 - **Ligero y fluido:** Pulso no trabaja en cada tecla ni al desplazarte; solo hace un
   mantenimiento breve cuando la página está inactiva. Si la GPU falla al arrancar, sigue sin
   ella. Se puede cambiar en **Ajustes de Pulso → Aceleración por GPU** y en la bandeja.
-- **Temas:** Pulso, Estilo Telegram, Comunidad y Estilo Discord, en **Perfil → Temas**. Cambian
+- **Temas:** Pulso, Estilo Telegram, Comunidad, Estilo Discord, Naranja oscuro, Neón, Panel
+  turquesa, Cromo rojo y Luna azul, en **Perfil → Temas**. Cambian
   la disposición y las formas de la interfaz, no solo los colores.
 - **Animaciones** al enviar y recibir mensajes, cambiar de chat y abrir menús.
 - **Todo WhatsApp Web:** chats, grupos, comunidades, canales, estados, archivos, notas de voz,

@@ -80,6 +80,8 @@
   const RAIL_ITEM = '[data-testid="navbar-primary-section"] span > div, [data-testid="navbar-primary-section"] button';
   const COMPOSER = '[data-testid="compose-box"] span > div > div > div';
   const WALLPAPER = '[data-testid^="conversation-background"]';
+  const RAIL = '.two > header[data-testid="chatlist-header"]';
+  const LIST_HEADER = '.two > div > header[data-testid="chatlist-header"]';
   const CHAT_HEADER = 'header[data-testid="conversation-header"]';
   const PILLS = `${BUBBLE} { border-radius: 20px !important; }
     ${TAILS}, ${WALLPAPER} { display: none !important; }`;
@@ -125,6 +127,80 @@
         ${CHAT_HEADER} { box-shadow: 0 1px 0 rgba(0, 0, 0, .3); }
         ${COMPOSER} { border-radius: 8px !important; }`,
     },
+    ember: {
+      name: 'Naranja oscuro', bar: '#0a0a0a', panel: '#0a0a0a', chat: '#1c1c1c', raised: '#222222', high: '#2c2c2c',
+      incoming: '#2a2a2a', outgoing: '#e8400c', composer: '#262626', accent: '#ff5a1f', selected: '#2e2e2e',
+      onAccent: '#ffffff', rows: 12, highlight: 'rgba(255, 255, 255, .1)',
+      inBg: 'linear-gradient(135deg, #3a3a3a, #232323)', outBg: 'linear-gradient(135deg, #ff6a2b, #e8400c)',
+      layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
+        ${BUBBLE} { border-radius: 14px !important; }
+        ${CHAT_BOX} { margin: 8px 8px 0; height: calc(100% - 8px); border-radius: 18px 18px 0 0; overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, .07); }
+        ${COMPOSER} { border-radius: 12px !important; border: 1px solid rgba(255, 255, 255, .09); }
+        ${RAIL_ITEM} { border-radius: 10px !important; }`,
+    },
+    neon: {
+      name: 'Neón', bar: '#0a060e', panel: '#0f0a14', chat: '#120c18', raised: '#1b1322', high: '#241a2e',
+      incoming: '#1f1728', outgoing: '#a21caf', composer: '#1b1322', accent: '#e879f9', selected: '#a21caf',
+      onAccent: '#1a0420', rows: 12, highlight: 'rgba(217, 70, 239, .5)',
+      inBg: 'linear-gradient(135deg, #2a1f35, #1a1322)', outBg: 'linear-gradient(135deg, #e040fb, #a21caf)',
+      frame: 'radial-gradient(90% 70% at 0 0, rgba(192, 38, 211, .4), transparent 60%), #0a060e',
+      layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
+        ${floatingCards(16)}
+        ${BUBBLE} { border-radius: 16px !important; }
+        ${LIST_BOX}, ${CHAT_BOX} { border: 1px solid rgba(232, 121, 249, .18); }
+        ${CHAT_BOX} { background: radial-gradient(70% 50% at 0 0, rgba(192, 38, 211, .22), transparent 70%), #120c18; }
+        #main { background: transparent !important; }
+        ${COMPOSER} { border-radius: 14px !important; border: 1px solid rgba(232, 121, 249, .2); }`,
+    },
+    teal: {
+      name: 'Panel turquesa', bar: '#1f1f1f', panel: '#383838', chat: '#232323', raised: '#2e2e2e', high: '#454545',
+      incoming: '#383838', outgoing: '#237f99', composer: '#383838', accent: '#35aecb', selected: '#232323',
+      onAccent: '#08222a', rows: 12, highlight: 'rgba(0, 0, 0, .35)',
+      layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
+        ${BUBBLE} { border-radius: 16px !important; }
+        #pane-side [data-testid="cell-frame-container"] { background: #232323 !important; border-radius: 12px !important;
+          border-left: 7px solid #35aecb; }
+        ${CHAT_HEADER} { background: #232323 !important; }
+        ${COMPOSER} { border-radius: 16px !important; }`,
+    },
+    chrome: {
+      name: 'Cromo rojo', bar: '#4d5157', panel: '#7a1f23', chat: '#8f1418', raised: '#a8282c', high: '#b33a3d',
+      incoming: '#4d5157', outgoing: '#a81a20', composer: '#4d5157', accent: '#f0f1f3', selected: '#b3262b',
+      onAccent: '#3a0a0c', rows: 8, highlight: 'rgba(255, 255, 255, .16)',
+      inBg: 'linear-gradient(180deg, #7a7f88, #4d5157 50%, #42464c)',
+      outBg: 'linear-gradient(180deg, #e2474c, #a81a20 50%, #8f1418)',
+      frame: 'linear-gradient(180deg, #d9dbe0, #8b8f96 50%, #c9ccd2)',
+      layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
+        ${floatingCards(22)}
+        ${BUBBLE} { border-radius: 12px !important; }
+        [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(255, 255, 255, .25); }
+        ${LIST_BOX}, ${CHAT_BOX} { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35); }
+        ${CHAT_BOX} { background: radial-gradient(120% 90% at 85% 15%, #d8292f, #7d0f12 60%, #4a080a); }
+        #main { background: transparent !important; }
+        ${RAIL} { background: linear-gradient(90deg, #d9dbe0, #9a9ea5) !important; }
+        ${CHAT_HEADER} { background: linear-gradient(180deg, #f2f3f5, #a9adb4 48%, #8e9299 52%, #c4c7cc) !important; }
+        ${CHAT_HEADER}, ${RAIL} { --WDS-content-default: #1c1c1c !important; --WDS-content-deemphasized: #333333 !important;
+          --WDS-content-action-default: #222222 !important; color: #1c1c1c; }`,
+    },
+    luna: {
+      name: 'Luna azul', bar: '#0a58d0', panel: '#f4f7ff', chat: '#7ec0ee', raised: '#ece9d8', high: '#dfe6fa',
+      incoming: '#ffffff', outgoing: '#d9fdd3', composer: '#ffffff', accent: '#2a8a2f', selected: '#316ac5',
+      onAccent: '#ffffff', rows: 4, highlight: 'rgba(49, 106, 197, .22)', text: '#0b1b3a', muted: '#44506b',
+      frame: 'linear-gradient(180deg, #2f7df0, #0a4fc2)',
+      layout: `${TAILS}, ${WALLPAPER} { display: none !important; }
+        ${BUBBLE} { border-radius: 8px !important; }
+        [data-testid="msg-container"] > div:first-of-type { border: 1px solid #8fb0e8; }
+        ${LIST_BOX}, ${CHAT_BOX} { margin: 6px 0; height: calc(100% - 12px); border: 3px solid #0a4fc2; border-radius: 8px; overflow: hidden; }
+        ${CHAT_BOX} { margin-left: 6px; margin-right: 6px;
+          background: radial-gradient(140% 55% at 30% 100%, #6fb83a 60%, transparent 61%), linear-gradient(180deg, #3a86e4, #b5dcf7 75%); }
+        #main { background: transparent !important; }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: linear-gradient(180deg, #2f7df0, #0a4fc2) !important; }
+        ${RAIL} { background: linear-gradient(90deg, #2f7df0, #0a4fc2) !important; }
+        ${COMPOSER} { border-radius: 6px !important; border: 1px solid #8fb0e8; }
+        ${CHAT_HEADER}, ${LIST_HEADER}, ${RAIL} { --WDS-content-default: #ffffff !important; --WDS-content-deemphasized: #dbe6ff !important;
+          --WDS-content-action-default: #ffffff !important; color: #ffffff; }`,
+    },
   };
 
   const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ');
@@ -142,6 +218,11 @@
     const vars = Object.entries(colors).map(([k, c]) => `--WDS-${k}: ${c} !important; --WDS-${k}-RGB: ${rgb(c)} !important;`);
     vars.push(`--WDS-surface-highlight: ${t.highlight || `rgba(${rgb(t.accent)}, .08)`} !important;`);
     vars.push(`--WDS-surface-pressed: rgba(${rgb(t.accent)}, .16) !important;`);
+    if (t.text) {
+      for (const k of ['content-default', 'content-action-default']) vars.push(`--WDS-${k}: ${t.text} !important;`);
+      for (const k of ['content-deemphasized', 'systems-bubble-content-deemphasized']) vars.push(`--WDS-${k}: ${t.muted} !important;`);
+      vars.push(`--WDS-lines-divider: rgba(${rgb(t.text)}, .14) !important;`);
+    }
     return vars.join('\n');
   }
 
@@ -158,7 +239,7 @@
       body.dark #pane-side [role="listitem"], body.dark #pane-side [role="row"] { border-radius: ${theme.rows}px; }
       body.dark ::-webkit-scrollbar-thumb { background-color: rgba(${a}, .18) !important; border-radius: 99px; }
       body.dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(${a}, .32) !important; }
-      body.dark .two { background: ${theme.bar} !important; }
+      body.dark .two { background: ${theme.frame || theme.bar} !important; }
       ${theme.layout || ''}
     `;
   }
@@ -169,7 +250,15 @@
   const themeStyle = makeStyle('');
   let ruleCount = -1;
   let themeSelectors = 'body.dark';
-  const writeTheme = () => { themeStyle.textContent = `${themeSelectors} {${themeVars(theme)}}`; };
+  // Bubbles paint a solid variable, so gradients need WhatsApp's own bubble classes (found below).
+  let bubbleClasses = { in: new Set(), out: new Set() };
+  const bubbleRule = (classes, background) => (background && classes.size
+    ? `${[...classes].join(', ')} { background: ${background} !important; }` : '');
+  const writeTheme = () => {
+    themeStyle.textContent = `${themeSelectors} {${themeVars(theme)}}
+      ${bubbleRule(bubbleClasses.in, theme.inBg)}
+      ${bubbleRule(bubbleClasses.out, theme.outBg)}`;
+  };
   function setTheme(id, save) {
     theme = THEMES[id] || THEMES.pulso;
     applyThemeShape();
@@ -189,9 +278,15 @@
     if (count === ruleCount) return;
     ruleCount = count;
     const selectors = new Set();
+    bubbleClasses = { in: new Set(), out: new Set() };
     const walk = (rules) => {
       for (const r of rules) {
         if (r.cssRules && r.cssRules.length) walk(r.cssRules);
+        if (r.style && r.selectorText) {
+          const bg = r.style.getPropertyValue('background-color');
+          if (bg.includes('bubble-surface-incoming')) bubbleClasses.in.add(r.selectorText);
+          if (bg.includes('bubble-surface-outgoing')) bubbleClasses.out.add(r.selectorText);
+        }
         if (r.style && r.selectorText && r.style.getPropertyValue('--WDS-accent')) {
           for (const s of r.selectorText.split(',')) {
             if (!s.includes(':root') && !s.includes('::')) selectors.add(`body.dark ${s.trim()}`);
