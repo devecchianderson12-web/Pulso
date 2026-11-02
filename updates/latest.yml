@@ -1,8 +1,8 @@
-version: 2.8.0
+version: 2.9.0
 files:
-  - url: https://github.com/devecchianderson12-web/Pulso/releases/download/v2.8.0/Pulso-Setup-2.8.0.exe
-    sha512: 6rkPmm6TMj8UelaulXMXetTJEIuq26VySf6/tK1tJ6Z+shdyZXx4kceKccazw02J0N3YHdAsFtN+rUrbT5Vrng==
-    size: 86603695
-path: https://github.com/devecchianderson12-web/Pulso/releases/download/v2.8.0/Pulso-Setup-2.8.0.exe
-sha512: 6rkPmm6TMj8UelaulXMXetTJEIuq26VySf6/tK1tJ6Z+shdyZXx4kceKccazw02J0N3YHdAsFtN+rUrbT5Vrng==
-releaseDate: '2026-11-02T12:27:46.177Z'
+  - url: https://github.com/devecchianderson12-web/Pulso/releases/download/v2.9.0/Pulso-Setup-2.9.0.exe
+    sha512: DCMw7faLV1AgiWRaDBJOE1eYZTFbxegRh0pYM0WSIIXJr3pC9hXvtAXedKG81y9vATBsNUspqqsxGwI8UG5VFw==
+    size: 86604362
+path: https://github.com/devecchianderson12-web/Pulso/releases/download/v2.9.0/Pulso-Setup-2.9.0.exe
+sha512: DCMw7faLV1AgiWRaDBJOE1eYZTFbxegRh0pYM0WSIIXJr3pC9hXvtAXedKG81y9vATBsNUspqqsxGwI8UG5VFw==
+releaseDate: '2026-11-02T12:38:17.784Z'
