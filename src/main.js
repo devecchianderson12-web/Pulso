@@ -10,6 +10,7 @@ const updater = require('./updater');
 
 const APP_NAME = 'Pulso';
 const TITLE_BAR_HEIGHT = 40;
+const LUNA_BAR_HEIGHT = 30; // the height of a classic title bar
 const WHATSAPP_URL = 'https://web.whatsapp.com/';
 const WHATSAPP_ORIGIN = 'https://web.whatsapp.com';
 const PARTITION = 'persist:whatsapp';
@@ -30,6 +31,7 @@ const PAGE_CODE = fs.readFileSync(path.join(__dirname, 'page.js'), 'utf8');
 let win;
 let wa; // WhatsApp Web's webContents, shown below the title bar.
 let tray;
+let layout; // Fits WhatsApp's view below the title bar.
 let quitting = false;
 let unread = 0;
 
@@ -141,8 +143,7 @@ function createWindow() {
     icon: icons.windowIcon(),
     backgroundColor: settings.get('barColor'),
     show: false,
-    titleBarStyle: 'hidden',
-    titleBarOverlay: { color: settings.get('barColor'), symbolColor: '#cfe9dd', height: TITLE_BAR_HEIGHT },
+    titleBarStyle: 'hidden', // shell.html draws the bar and its buttons, so themes can restyle them
     webPreferences: { preload: path.join(__dirname, 'shell-preload.js') },
   });
   win.loadFile(path.join(__dirname, 'shell.html'));
@@ -161,15 +162,18 @@ function createWindow() {
   view.setBackgroundColor(settings.get('barColor'));
   win.contentView.addChildView(view);
   wa = view.webContents;
-  const layout = () => {
+  layout = () => {
     const [width, height] = win.getContentSize();
-    const top = win.isFullScreen() ? 0 : TITLE_BAR_HEIGHT;
+    const bar = settings.get('theme') === 'luna' ? LUNA_BAR_HEIGHT : TITLE_BAR_HEIGHT;
+    const top = win.isFullScreen() ? 0 : bar;
     view.setBounds({ x: 0, y: top, width, height: height - top });
   };
   layout();
   win.on('resize', layout);
   win.on('enter-full-screen', layout);
   win.on('leave-full-screen', layout);
+  win.on('maximize', () => win.webContents.send('shell:maximized', true));
+  win.on('unmaximize', () => win.webContents.send('shell:maximized', false));
 
   if (settings.get('maximized')) win.maximize();
   const hidden = process.argv.includes('--hidden') || settings.get('startMinimized');
@@ -269,7 +273,20 @@ ipcMain.on('pulso:page', (event) => {
     theme: settings.get('theme'),
   };
 });
-ipcMain.handle('shell:state', () => ({ unread, color: settings.get('barColor') }));
+ipcMain.handle('shell:state', () => ({
+  unread,
+  color: settings.get('barColor'),
+  theme: settings.get('theme'),
+  maximized: win.isMaximized(),
+}));
+ipcMain.on('shell:control', (event, action) => {
+  if (action === 'minimize') win.minimize();
+  else if (action === 'close') win.close();
+  else if (action === 'maximize') {
+    if (win.isMaximized()) win.unmaximize();
+    else win.maximize();
+  }
+});
 
 // Options shown in the Pulso panel inside WhatsApp Web. That page is remote content, so only
 // these exact keys and actions can be reached from it.
@@ -319,8 +336,8 @@ ipcMain.on('pulso:theme', (event, id, color) => {
   settings.set('theme', id);
   settings.set('barColor', color);
   win.setBackgroundColor(color);
-  win.setTitleBarOverlay({ color, symbolColor: '#cfe9dd', height: TITLE_BAR_HEIGHT });
-  win.webContents.send('shell:color', color);
+  win.webContents.send('shell:look', color, id);
+  layout();
 });
 
 function checkForUpdates() {

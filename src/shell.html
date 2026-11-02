@@ -12,9 +12,7 @@
     font: 600 14px/1 "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
     color: var(--fg); -webkit-font-smoothing: antialiased; user-select: none;
   }
-  .bar {
-    height: 40px; display: flex; align-items: center; padding: 0 14px; -webkit-app-region: drag;
-  }
+  .bar { height: 40px; display: flex; align-items: center; padding-left: 14px; -webkit-app-region: drag; }
   .brand { display: flex; align-items: center; gap: 8px; }
   .brand svg { width: 22px; height: 22px; }
   .brand span { font-size: 15px; font-weight: 700; letter-spacing: -.2px; }
@@ -24,6 +22,69 @@
     transition: opacity .22s cubic-bezier(.2,0,0,1), transform .3s cubic-bezier(.2,.9,.25,1.2);
   }
   .pill.on { opacity: 1; transform: none; }
+  .controls { margin-left: auto; display: flex; height: 100%; -webkit-app-region: no-drag; }
+  .controls button {
+    width: 46px; height: 100%; border: 0; padding: 0; display: grid; place-items: center;
+    background: transparent; color: #cfe9dd; transition: background-color .12s;
+  }
+  .controls button:hover { background: rgba(255, 255, 255, .1); }
+  .controls button:active { background: rgba(255, 255, 255, .18); }
+  .controls #close:hover { background: #e81123; color: #fff; }
+  .controls #close:active { background: #b50e1c; color: #fff; }
+
+  /* Each theme continues its own frame into the bar, so it reads as one surface. */
+  [data-theme="telegram"], [data-theme="community"] { --accent: #25d366; }
+  [data-theme="discord"] { --accent: #25d366; }
+  [data-theme="discord"] .brand span { font-size: 13px; color: #b5bac1; }
+  [data-theme="discord"] .controls button { color: #b5bac1; }
+  [data-theme="ember"] { --accent: #ff6a2b; }
+  [data-theme="ember"] .bar { background: radial-gradient(60% 260% at 100% 0, rgba(232, 64, 12, .28), transparent 70%), #0a0a0a; }
+  [data-theme="ember"] .controls button { color: #ffd2bd; }
+  [data-theme="ember"] .controls button:hover { background: rgba(255, 106, 43, .22); }
+  [data-theme="neon"] { --accent: #e879f9; }
+  [data-theme="neon"] .bar { background: radial-gradient(70% 420% at 0 0, rgba(192, 38, 211, .45), transparent 70%), #0a060e; }
+  [data-theme="neon"] .brand span { text-shadow: 0 0 8px rgba(232, 121, 249, .8); }
+  [data-theme="neon"] .controls button { color: #f0c6fa; }
+  [data-theme="neon"] .controls button:hover { background: rgba(217, 70, 239, .28); }
+  [data-theme="teal"] { --accent: #35aecb; }
+  [data-theme="teal"] .controls button { color: #c9d6da; }
+  [data-theme^="chrome"] .bar { background: linear-gradient(180deg, #f2f3f5, #c9ccd2 60%, #d9dbe0); }
+  [data-theme^="chrome"] .brand span { color: #1c1c1c; text-shadow: 0 1px 0 rgba(255, 255, 255, .7); }
+  [data-theme^="chrome"] .controls { align-items: center; gap: 3px; padding-right: 8px; }
+  [data-theme^="chrome"] .controls button {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid #8b8f96; color: #2a2a2a;
+    background: linear-gradient(180deg, #ffffff, #b9bcc3 55%, #d9dbe0);
+  }
+  [data-theme^="chrome"] .controls button:hover { background: linear-gradient(180deg, #ffffff, #cfd2d8 55%, #eceef1); }
+  [data-theme^="chrome"] .controls button:active { background: linear-gradient(180deg, #b9bcc3, #e4e6ea); }
+  [data-theme="chrome"] { --accent: #b3262b; }
+  [data-theme="chromepurple"] { --accent: #7a2cc0; }
+  [data-theme="chromeblue"] { --accent: #1f8fcf; }
+  [data-theme^="chrome"] .pill { color: #fff; }
+
+  /* Luna azul: glossy blue title bar with beveled caption buttons. */
+  [data-theme="luna"] { font: 700 13px/1 Tahoma, "Segoe UI", sans-serif; }
+  [data-theme="luna"] .bar {
+    height: 30px; padding-left: 6px;
+    background: linear-gradient(180deg, #0a5fe0 0%, #3d95ff 7%, #0d6bf0 16%, #0058e6 50%, #0a62ee 86%, #003dbb 100%);
+  }
+  [data-theme="luna"] .brand { gap: 5px; }
+  [data-theme="luna"] .brand svg { width: 16px; height: 16px; }
+  [data-theme="luna"] .brand span { font: 700 13px Tahoma, "Segoe UI", sans-serif; letter-spacing: 0; color: #fff;
+    text-shadow: 1px 1px 1px #0a2a7a; }
+  [data-theme="luna"] .pill { background: #ffd24a; color: #3a2a00; border-radius: 3px; padding: 2px 6px; }
+  [data-theme="luna"] .controls { align-items: center; gap: 2px; padding-right: 5px; }
+  [data-theme="luna"] .controls button {
+    width: 21px; height: 21px; border-radius: 3px; border: 1px solid #fff; color: #fff;
+    background: radial-gradient(circle at 30% 25%, #6ea6ff, #2a63e0 55%, #1740b8);
+    box-shadow: inset -1px -1px 1px rgba(0, 20, 90, .5);
+  }
+  [data-theme="luna"] .controls button:hover { background: radial-gradient(circle at 30% 25%, #8fbcff, #3f7bf0 55%, #2152cc); }
+  [data-theme="luna"] .controls button:active { background: radial-gradient(circle at 70% 75%, #6ea6ff, #2a63e0 55%, #1740b8); }
+  [data-theme="luna"] .controls #close { background: radial-gradient(circle at 30% 25%, #f5a58a, #df4a2a 55%, #b32a12); }
+  [data-theme="luna"] .controls #close:hover { background: radial-gradient(circle at 30% 25%, #ffbda6, #ef6240 55%, #c93a1e); color: #fff; }
+  [data-theme="luna"] .controls #close:active { background: radial-gradient(circle at 70% 75%, #f5a58a, #df4a2a 55%, #b32a12); color: #fff; }
+  [data-theme="luna"] .controls svg { width: 11px; height: 11px; stroke-width: 2; }
 </style>
 </head>
 <body>
@@ -43,17 +104,44 @@
       <span>Pulso</span>
     </div>
     <div class="pill" id="pill"></div>
+    <div class="controls">
+      <button id="minimize" aria-label="Minimizar" title="Minimizar">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor"><path d="M0 5.5h10"/></svg>
+      </button>
+      <button id="maximize" aria-label="Maximizar" title="Maximizar">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor"><path id="max-icon" d="M.5.5h9v9h-9z"/></svg>
+      </button>
+      <button id="close" aria-label="Cerrar" title="Cerrar">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor"><path d="m.5.5 9 9m0-9-9 9"/></svg>
+      </button>
+    </div>
   </div>
 <script>
   const pill = document.getElementById('pill');
+  const NORMAL_ICON = 'M.5.5h9v9h-9z';
+  const RESTORE_ICON = 'M2.5 2.5V.5h7v7h-2M.5 2.5h7v7h-7z';
   function setUnread(n) {
     pill.classList.toggle('on', n > 0);
     if (n > 0) pill.textContent = `${n > 99 ? '99+' : n} sin leer`;
   }
-  const setColor = (color) => document.documentElement.style.setProperty('--bg', color);
+  function setLook(color, theme) {
+    document.documentElement.style.setProperty('--bg', color);
+    document.body.dataset.theme = theme;
+  }
+  function setMaximized(on) {
+    document.getElementById('max-icon').setAttribute('d', on ? RESTORE_ICON : NORMAL_ICON);
+  }
   window.shell.onUnread(setUnread);
-  window.shell.onColor(setColor);
-  window.shell.state().then(({ unread, color }) => { setUnread(unread); setColor(color); });
+  window.shell.onLook(setLook);
+  window.shell.onMaximized(setMaximized);
+  window.shell.state().then((s) => {
+    setUnread(s.unread);
+    setLook(s.color, s.theme);
+    setMaximized(s.maximized);
+  });
+  for (const id of ['minimize', 'maximize', 'close']) {
+    document.getElementById(id).addEventListener('click', () => window.shell.control(id));
+  }
 </script>
 </body>
 </html>
