@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('pulso', {
   setLanguage: (code, on) => ipcRenderer.send('pulso:language', code, on),
   action: (name) => ipcRenderer.send('pulso:action', name),
   saveTheme: (id, color) => ipcRenderer.send('pulso:theme', id, color),
+  iconInfo: () => ipcRenderer.invoke('pulso:icon-info'),
+  saveIcon: (config) => ipcRenderer.send('pulso:icon', JSON.stringify(config)),
+  saveIconFile: (base64) => ipcRenderer.invoke('pulso:icon-file', base64),
 });
 
 // Reach the page as DOM events: strings cross the isolated worlds safely.

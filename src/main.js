@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const {
-  app, BrowserWindow, WebContentsView, Tray, Menu, nativeTheme, shell, session,
+  app, BrowserWindow, WebContentsView, Tray, Menu, nativeTheme, nativeImage, shell, session,
   ipcMain, Notification, dialog, clipboard, desktopCapturer,
 } = require('electron');
 const settings = require('./settings');
@@ -110,6 +110,7 @@ function start() {
   });
   ses.on('will-download', onDownload);
 
+  applyIcon(); // before the window and tray pick their icon
   createWindow();
   createTray();
   buildMenu();
@@ -280,6 +281,7 @@ ipcMain.handle('shell:state', () => ({
   color: settings.get('barColor'),
   theme: settings.get('theme'),
   maximized: win.isMaximized(),
+  icon: iconInfo(),
 }));
 ipcMain.on('shell:control', (event, action) => {
   if (action === 'minimize') win.minimize();
@@ -328,6 +330,50 @@ ipcMain.on('pulso:language', (event, code, on) => {
   const next = on ? [...others, code] : others;
   settings.set('spellcheckLanguages', next);
   session.fromPartition(PARTITION).setSpellCheckerLanguages(next);
+});
+// App icon chosen in the themes panel. A user .ico is copied into Pulso's data folder.
+const customIcoFile = () => path.join(app.getPath('userData'), 'custom-icon.ico');
+const HEX = /^#[0-9a-f]{6}$/i;
+
+function iconInfo() {
+  const c = settings.get('icon') || { kind: 'color' };
+  let ico = null;
+  if (c.kind === 'ico') {
+    try { ico = 'data:image/x-icon;base64,' + fs.readFileSync(customIcoFile()).toString('base64'); } catch { /* missing */ }
+  }
+  return { ...c, ico };
+}
+
+function applyIcon() {
+  const c = settings.get('icon');
+  const ico = c && c.kind === 'ico' ? nativeImage.createFromPath(customIcoFile()) : null;
+  icons.setStyle(c && c.kind === 'color' ? c : null, ico);
+  if (!win || win.isDestroyed()) return;
+  win.setIcon(icons.windowIcon());
+  tray.setImage(icons.trayIcon(unread));
+  win.webContents.send('shell:icon', iconInfo());
+}
+
+ipcMain.handle('pulso:icon-info', () => iconInfo());
+ipcMain.on('pulso:icon', (event, json) => {
+  try {
+    const c = JSON.parse(json);
+    if (!HEX.test(c.from) || !HEX.test(c.to)) return;
+    const angle = Math.round(Number(c.angle)) % 361;
+    settings.set('icon', { kind: 'color', from: c.from, to: c.to, angle: Number.isFinite(angle) ? angle : 135, gradient: Boolean(c.gradient) });
+    applyIcon();
+  } catch { /* ignore malformed */ }
+});
+ipcMain.handle('pulso:icon-file', (event, base64) => {
+  if (typeof base64 !== 'string' || base64.length > 6e6) return null;
+  const bytes = Buffer.from(base64, 'base64');
+  // ICONDIR header: reserved 0, type 1 (icon), at least one image.
+  if (bytes.length < 22 || bytes.readUInt16LE(0) !== 0 || bytes.readUInt16LE(2) !== 1 || bytes.readUInt16LE(4) < 1) return null;
+  fs.writeFileSync(customIcoFile(), bytes);
+  if (nativeImage.createFromPath(customIcoFile()).isEmpty()) return null;
+  settings.set('icon', { kind: 'ico' });
+  applyIcon();
+  return iconInfo();
 });
 ipcMain.on('pulso:action', (event, name) => {
   if (Object.hasOwn(ACTIONS, name)) ACTIONS[name]();

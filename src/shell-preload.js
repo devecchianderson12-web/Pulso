@@ -6,4 +6,5 @@ contextBridge.exposeInMainWorld('shell', {
   onLook: (cb) => ipcRenderer.on('shell:look', (e, color, theme) => cb(color, theme)),
   onMaximized: (cb) => ipcRenderer.on('shell:maximized', (e, on) => cb(on)),
   control: (action) => ipcRenderer.send('shell:control', action),
+  onIcon: (cb) => ipcRenderer.on('shell:icon', (e, info) => cb(info)),
 });

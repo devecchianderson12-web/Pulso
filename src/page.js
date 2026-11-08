@@ -810,6 +810,23 @@
     #pulso-panel .sw.on::after { translate: 14px 0; }
     #pulso-panel .danger { color: #ff7b72; }
     #pulso-panel .ver { margin-top: 12px; text-align: center; font-size: 12px; color: #8fa69d; }
+    #pulso-panel .icons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    #pulso-panel .icon { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px; font-size: 11.5px;
+      border-radius: 12px; border: 2px solid transparent; background: rgba(127, 127, 127, .1); }
+    #pulso-panel .icon.on { border-color: var(--p-accent); }
+    #pulso-panel .custom { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+    #pulso-panel .preview-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 16px; background: rgba(127, 127, 127, .14); }
+    #pulso-panel .pickers { display: flex; gap: 8px; }
+    #pulso-panel .pickers input { width: 44px; height: 34px; padding: 0; border: 0; border-radius: 8px; background: none; cursor: pointer; }
+    #pulso-panel .pickers input:disabled { opacity: .35; cursor: default; }
+    #pulso-panel .choices { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+    #pulso-panel .choice { padding: 7px 12px; border-radius: 9px; border: 1px solid rgba(127, 127, 127, .35); }
+    #pulso-panel .choice:hover { background: rgba(127, 127, 127, .14); }
+    #pulso-panel .choice.on { border-color: var(--p-accent); }
+    #pulso-panel .range { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+    #pulso-panel .range span { width: 84px; flex: none; font-size: 13px; }
+    #pulso-panel .range input { flex: 1; min-width: 0; accent-color: var(--p-accent); }
+    #pulso-panel .ico-preview { width: 32px; height: 32px; }
   `);
 
   const TOGGLE_LABELS = [
@@ -883,6 +900,123 @@
     section.prepend(button);
   }
 
+  // ---------- App icon: color variants, custom colors and a user .ico ----------
+  const ICON_PRESETS = [
+    ['Original', '#2ceb9a', '#10b673'], ['Azul', '#5fb2ff', '#1f5fd6'], ['Púrpura', '#c58cff', '#7c3aed'],
+    ['Rosa', '#ff8ac7', '#e2338a'], ['Rojo', '#ff7070', '#c81e1e'], ['Naranja', '#ffb24a', '#f05a12'],
+    ['Dorado', '#ffe08a', '#c99212'], ['Celeste', '#7fe3ff', '#1aa6d9'], ['Blanco', '#ffffff', '#cfd8dc'],
+    ['Noche', '#8a9aa6', '#3a4650'],
+  ];
+  let iconSeq = 0;
+  // Same drawing as the title bar logo; angle follows CSS (0 = upwards, 90 = to the right).
+  function markSvg(c, size) {
+    const id = `pulso-mark-${iconSeq++}`;
+    const to = c.gradient ? c.to : c.from;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><defs>
+      <linearGradient id="${id}" x1="0" y1="0" x2="1" y2="0" gradientTransform="rotate(${c.angle - 90} .5 .5)">
+      <stop offset="0" stop-color="${c.from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs>
+      <path d="M20 46 L7 59 L12 42" fill="url(#${id})"/>
+      <circle cx="34" cy="30" r="23" fill="none" stroke="url(#${id})" stroke-width="6"/>
+      <path d="M17 32h8l4-10 6 20 4-11 3 4h8" fill="none" stroke="url(#${id})" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+
+  function iconSection() {
+    const wrap = document.createElement('div');
+    const render = (info) => {
+      wrap.replaceChildren(heading('Icono'));
+      const grid = document.createElement('div');
+      grid.className = 'icons';
+      for (const [name, from, to] of ICON_PRESETS) {
+        const c = { kind: 'color', from, to, angle: 135, gradient: true };
+        const b = document.createElement('button');
+        const on = info.kind === 'color' && info.from === from && info.to === to && info.gradient && info.angle === 135;
+        b.className = on ? 'icon on' : 'icon';
+        b.innerHTML = markSvg(c, 34);
+        b.append(name);
+        b.addEventListener('click', () => { window.pulso.saveIcon(c); render(c); });
+        grid.append(b);
+      }
+      wrap.append(grid, heading('Color personalizado'));
+      const custom = { kind: 'color', from: info.from || '#2ceb9a', to: info.to || '#10b673',
+        angle: info.angle ?? 135, gradient: info.kind === 'color' ? info.gradient : true };
+      const row = document.createElement('div');
+      row.className = 'custom';
+      const preview = document.createElement('span');
+      preview.className = 'preview-icon';
+      const paint = () => { preview.innerHTML = markSvg(custom, 56); };
+      const colorInput = (key) => {
+        const input = document.createElement('input');
+        Object.assign(input, { type: 'color', value: custom[key] });
+        input.addEventListener('input', () => { custom[key] = input.value; paint(); });
+        return input;
+      };
+      const toInput = colorInput('to');
+      const gradientToggle = toggleItem('Degradado', custom.gradient, (on) => {
+        custom.gradient = on;
+        toInput.disabled = !on;
+        angle.disabled = !on;
+        paint();
+      });
+      const angleRow = document.createElement('label');
+      angleRow.className = 'range';
+      const angleName = document.createElement('span');
+      angleName.textContent = 'Dirección';
+      const angle = document.createElement('input');
+      Object.assign(angle, { type: 'range', min: 0, max: 360, step: 5, value: custom.angle, disabled: !custom.gradient });
+      toInput.disabled = !custom.gradient;
+      angle.addEventListener('input', () => { custom.angle = Number(angle.value); paint(); });
+      angleRow.append(angleName, angle);
+      const colors = document.createElement('div');
+      colors.className = 'pickers';
+      colors.append(colorInput('from'), toInput);
+      row.append(preview, colors);
+      const apply = document.createElement('button');
+      apply.className = 'choice';
+      apply.textContent = 'Aplicar color';
+      apply.addEventListener('click', () => { window.pulso.saveIcon({ ...custom }); render({ ...custom }); });
+      wrap.append(row, gradientToggle, angleRow, apply);
+      paint();
+
+      wrap.append(heading('Icono del sistema (.ico)'));
+      const file = document.createElement('input');
+      Object.assign(file, { type: 'file', accept: '.ico,image/x-icon', hidden: true });
+      file.addEventListener('change', async () => {
+        const f = file.files[0];
+        if (!f) return;
+        const bytes = new Uint8Array(await f.arrayBuffer());
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        const result = await window.pulso.saveIconFile(btoa(binary));
+        if (result) render(result);
+      });
+      const actions = document.createElement('div');
+      actions.className = 'choices';
+      const pick = document.createElement('button');
+      pick.className = info.kind === 'ico' ? 'choice on' : 'choice';
+      pick.textContent = info.kind === 'ico' ? 'Cambiar archivo .ico' : 'Elegir archivo .ico';
+      pick.addEventListener('click', () => file.click());
+      actions.append(pick, file);
+      if (info.kind === 'ico' && info.ico) {
+        const img = document.createElement('img');
+        img.src = info.ico;
+        img.className = 'ico-preview';
+        actions.prepend(img);
+      }
+      const reset = document.createElement('button');
+      reset.className = 'choice';
+      reset.textContent = 'Restablecer original';
+      reset.addEventListener('click', () => {
+        const original = { kind: 'color', from: '#2ceb9a', to: '#10b673', angle: 135, gradient: true };
+        window.pulso.saveIcon(original);
+        render(original);
+      });
+      actions.append(reset);
+      wrap.append(actions);
+    };
+    window.pulso.iconInfo().then(render);
+    return wrap;
+  }
+
   let panel;
   const paintPanel = (el) => {
     el.style.setProperty('--p-raised', theme.raised);
@@ -946,7 +1080,7 @@
     makeDraggable(box, head);
 
     if (kind === 'themes') {
-      box.append(themeCards(box));
+      box.append(themeCards(box), iconSection());
     } else {
       const o = await window.pulso.options();
       box.append(actionItem('Buscar actualizaciones', 'checkUpdates'), heading('General'));

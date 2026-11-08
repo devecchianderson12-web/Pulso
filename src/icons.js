@@ -81,10 +81,27 @@ function markShape(weight) {
   };
 }
 
-// Pulse-green gradient from top-left to bottom-right.
+// The mark's colors: the original pulse-green gradient unless the user picks others.
+// The angle follows CSS: 0 points up, 90 to the right, 135 to the bottom right.
+const DEFAULT_STYLE = { from: '#2ceb9a', to: '#10b673', angle: 135, gradient: true };
+let style = DEFAULT_STYLE;
+let customIco = null; // a nativeImage from the user's .ico, which replaces the drawn mark
+const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+
 function markColor(x, y) {
-  const t = Math.max(0, Math.min(1, (x + y) / 2));
-  return [44 - 28 * t, 235 - 53 * t, 154 - 39 * t];
+  const a = rgbOf(style.from);
+  if (!style.gradient) return a;
+  const b = rgbOf(style.to);
+  const rad = (style.angle * Math.PI) / 180;
+  const s = Math.sin(rad), c = Math.cos(rad);
+  const t = Math.max(0, Math.min(1, ((x - 0.5) * s - (y - 0.5) * c) / (Math.abs(s) + Math.abs(c)) + 0.5));
+  return a.map((v, i) => v + (b[i] - v) * t);
+}
+
+function setStyle(next, ico) {
+  style = next || DEFAULT_STYLE;
+  customIco = ico && !ico.isEmpty() ? ico : null;
+  cache.clear();
 }
 
 // Digits as strokes in a 0.6 x 1 box.
@@ -121,13 +138,20 @@ const circle = (cx, cy, r) => (x, y) => Math.hypot(x - cx, y - cy) - r;
 // ---------- Rendering ----------
 
 // Layers are drawn bottom to top: { shape, color: [r,g,b] | (x,y)=>[r,g,b], erase? }.
-function render(size, layers) {
-  const px = Buffer.alloc(size * size * 4);
+// `base` is an optional RGBA image to draw over (the user's icon under the unread badge).
+function render(size, layers, base) {
+  return encodePng(size, renderRaw(size, layers, base));
+}
+
+function renderRaw(size, layers, base) {
+  const px = base ? Buffer.from(base) : Buffer.alloc(size * size * 4);
   const aa = 1 / size;
   for (let j = 0; j < size; j++) {
     for (let i = 0; i < size; i++) {
       const x = (i + 0.5) / size, y = (j + 0.5) / size;
-      let r = 0, g = 0, b = 0, a = 0;
+      const k = (j * size + i) * 4;
+      let a = px[k + 3] / 255;
+      let r = px[k] * a, g = px[k + 1] * a, b = px[k + 2] * a;
       for (const layer of layers) {
         const cov = Math.max(0, Math.min(1, 0.5 - layer.shape(x, y) / aa));
         if (cov <= 0) continue;
@@ -136,20 +160,30 @@ function render(size, layers) {
         r = cr * cov + r * (1 - cov); g = cg * cov + g * (1 - cov); b = cb * cov + b * (1 - cov);
         a = cov + a * (1 - cov);
       }
-      const k = (j * size + i) * 4;
       if (a > 0) {
         px[k] = Math.round(r / a); px[k + 1] = Math.round(g / a); px[k + 2] = Math.round(b / a);
-        px[k + 3] = Math.round(a * 255);
       }
+      px[k + 3] = Math.round(a * 255);
     }
   }
-  return encodePng(size, px);
+  return px;
+}
+
+// The user's icon at an exact size, as RGBA.
+function icoRgba(size) {
+  const bgra = customIco.resize({ width: size, height: size, quality: 'best' }).toBitmap();
+  const out = Buffer.alloc(size * size * 4);
+  for (let i = 0; i < out.length; i += 4) {
+    out[i] = bgra[i + 2]; out[i + 1] = bgra[i + 1]; out[i + 2] = bgra[i]; out[i + 3] = bgra[i + 3];
+  }
+  return out;
 }
 
 // Thicker strokes at small sizes keep the mark legible.
 const weightFor = (size) => (size <= 20 ? 1.35 : size <= 32 ? 1.18 : 1);
 
 function markPng(size) {
+  if (customIco) return encodePng(size, icoRgba(size));
   return render(size, [{ shape: markShape(weightFor(size)), color: markColor }]);
 }
 
@@ -164,12 +198,13 @@ function badgeLabel(count) {
 function trayPng(size, count) {
   if (!count) return markPng(size);
   const label = count > 9 ? '+' : String(count);
+  const mark = customIco ? [] : [{ shape: markShape(weightFor(size)), color: markColor }];
   return render(size, [
-    { shape: markShape(weightFor(size)), color: markColor },
+    ...mark,
     { shape: circle(0.72, 0.72, 0.335), erase: true },
     { shape: circle(0.72, 0.72, 0.28), color: RED },
     { shape: textShape(label, 0.72, 0.72, 0.3), color: WHITE },
-  ]);
+  ], customIco ? icoRgba(size) : undefined);
 }
 
 // Taskbar overlay: red circle with the count.
@@ -186,11 +221,11 @@ function overlayPng(size, count) {
 // Each image is drawn once: unread counts repeat, so later updates are instant.
 const SCALES = [1, 1.25, 1.5, 2, 2.5, 3];
 const cache = new Map();
-function multiScale(key, draw) {
+function multiScale(key, draw, scales = SCALES, base = 16) {
   if (cache.has(key)) return cache.get(key);
   const { nativeImage } = require('electron');
   const img = nativeImage.createEmpty();
-  for (const scaleFactor of SCALES) img.addRepresentation({ scaleFactor, buffer: draw(Math.round(16 * scaleFactor)) });
+  for (const scaleFactor of scales) img.addRepresentation({ scaleFactor, buffer: draw(Math.round(base * scaleFactor)) });
   cache.set(key, img);
   return img;
 }
@@ -200,7 +235,10 @@ const overlayIcon = (count) => multiScale(`overlay${Math.min(count, 100)}`, (s) 
 
 function windowIcon() {
   const { nativeImage } = require('electron');
-  return nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'icon.ico'));
+  if (customIco) return customIco;
+  if (style === DEFAULT_STYLE) return nativeImage.createFromPath(path.join(__dirname, '..', 'assets', 'icon.ico'));
+  // Recolored mark: drawn at each size Windows asks for (32 px = scale 1), so it stays sharp.
+  return multiScale('window', (s) => markPng(s), [0.5, 0.75, 1, 1.5, 2, 4, 8], 32);
 }
 
-module.exports = { markPng, trayIcon, overlayIcon, windowIcon, badgeLabel };
+module.exports = { markPng, trayIcon, overlayIcon, windowIcon, badgeLabel, setStyle };
