@@ -98,6 +98,8 @@ function markColor(x, y) {
   return a.map((v, i) => v + (b[i] - v) * t);
 }
 
+const isDefault = () => style === DEFAULT_STYLE && !customIco;
+
 function setStyle(next, ico) {
   style = next || DEFAULT_STYLE;
   customIco = ico && !ico.isEmpty() ? ico : null;
@@ -241,4 +243,26 @@ function windowIcon() {
   return multiScale('window', (s) => markPng(s), [0.5, 0.75, 1, 1.5, 2, 4, 8], 32);
 }
 
-module.exports = { markPng, trayIcon, overlayIcon, windowIcon, badgeLabel, setStyle };
+// Windows icon (.ico) holding a PNG per size, so Windows never has to rescale.
+const ICO_SIZES = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256];
+function icoBuffer(sizes = ICO_SIZES) {
+  const images = sizes.map((s) => markPng(s));
+  const header = Buffer.alloc(6 + 16 * sizes.length);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(sizes.length, 4);
+  let offset = header.length;
+  sizes.forEach((s, i) => {
+    const e = 6 + i * 16;
+    header[e] = s >= 256 ? 0 : s;
+    header[e + 1] = s >= 256 ? 0 : s;
+    header.writeUInt16LE(1, e + 4);  // planes
+    header.writeUInt16LE(32, e + 6); // bits per pixel
+    header.writeUInt32LE(images[i].length, e + 8);
+    header.writeUInt32LE(offset, e + 12);
+    offset += images[i].length;
+  });
+  return Buffer.concat([header, ...images]);
+}
+
+module.exports = { markPng, trayIcon, overlayIcon, windowIcon, badgeLabel, setStyle, isDefault, icoBuffer };

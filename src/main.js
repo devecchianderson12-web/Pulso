@@ -7,6 +7,7 @@ const {
 const settings = require('./settings');
 const icons = require('./icons');
 const updater = require('./updater');
+const shortcuts = require('./shortcuts');
 
 const APP_NAME = 'Pulso';
 const TITLE_BAR_HEIGHT = 40;
@@ -344,10 +345,27 @@ function iconInfo() {
   return { ...c, ico };
 }
 
+// Desktop, Start menu and taskbar shortcuts follow the icon too (installed builds only).
+let shortcutTimer;
+function syncShortcuts() {
+  if (!app.isPackaged || process.platform !== 'win32') return;
+  clearTimeout(shortcutTimer);
+  shortcutTimer = setTimeout(() => {
+    try {
+      const c = settings.get('icon');
+      const buffer = icons.isDefault() ? null : c && c.kind === 'ico' ? fs.readFileSync(customIcoFile()) : icons.icoBuffer();
+      shortcuts.sync(buffer);
+    } catch (err) {
+      console.error('Accesos directos:', err);
+    }
+  }, 1500);
+}
+
 function applyIcon() {
   const c = settings.get('icon');
   const ico = c && c.kind === 'ico' ? nativeImage.createFromPath(customIcoFile()) : null;
   icons.setStyle(c && c.kind === 'color' ? c : null, ico);
+  syncShortcuts();
   if (!win || win.isDestroyed()) return;
   win.setIcon(icons.windowIcon());
   tray.setImage(icons.trayIcon(unread));
