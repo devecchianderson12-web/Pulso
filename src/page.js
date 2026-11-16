@@ -84,19 +84,22 @@
   const TAILS = '[data-testid="tail-out"], [data-testid="tail-in"]';
   const RAIL_ITEM = '[data-testid="navbar-primary-section"] span > div, [data-testid="navbar-primary-section"] button';
   const COMPOSER = '[data-testid="compose-box"] span > div > div > div';
-  const WALLPAPER = '[data-testid^="conversation-background"]';
+  const WALLPAPER = '[data-testid^="conversation-background"], [data-testid^="stock-wallpaper"]';
   const LOCK = '[data-testid="lock-screen-landing-window"]';
   const RAIL = '.two > header[data-testid="chatlist-header"]';
   const LIST_HEADER = '.two > div > header[data-testid="chatlist-header"]';
   const CHAT_HEADER = 'header[data-testid="conversation-header"], [data-testid^="drawer-"] header';
   const LEFT_DRAWER = '[data-testid="drawer-left"]';
+  // Drawers stay in the page while closed (empty): only an open one gets painted.
+  const MIDDLE_OPEN = '[data-testid="drawer-middle"]:has(span *)';
   const ROWS = '#pane-side [data-testid="cell-frame-container"], [data-testid^="drawer-"] [data-testid="cell-frame-container"], [data-testid="dropdown"] [data-testid="cell-frame-container"]';
   const PILLS = `${BUBBLE} { border-radius: 20px !important; }
     ${TAILS}, ${WALLPAPER} { display: none !important; }`;
   const floatingCards = (radius) => `
     ${LIST_BOX}, ${CHAT_BOX} { margin: 10px 0; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; }
     ${CHAT_BOX} { margin-left: 10px; margin-right: 10px; }
-    ${LEFT_DRAWER} { margin-top: 10px; margin-bottom: 10px; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; }`;
+    ${LEFT_DRAWER} { margin-top: 10px; margin-bottom: 10px; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; }
+    ${MIDDLE_OPEN} { margin: 10px; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; background: var(--WDS-background-wash-plain); }`;
 
   // Chat rows drawn like glossy message bubbles. WhatsApp paints rows with these two variables,
   // so setting them on the list keeps its own hover and selected states working.
@@ -465,7 +468,7 @@
         ${ROWS} { --WDS-surface-default: transparent !important; --WDS-surface-highlight: rgba(255, 255, 255, .2) !important;
           margin: 0 8px; border: 1px solid rgba(255, 255, 255, .78); border-radius: 6px !important;
           background-image: ${glass(0.38, 0.16, 0.05, 0.18)}; box-shadow: 0 2px 6px rgba(0, 40, 130, .35), inset 0 1px 0 rgba(255, 255, 255, .85); }
-        ${SELECTED_ROW} { background-image: ${glass(0.7, 0.42, 0.28, 0.46)}; box-shadow: 0 0 14px rgba(255, 255, 255, .55), inset 0 1px 0 #fff; }
+        ${SELECTED_ROW} { background-image: ${glass(0.52, 0.3, 0.2, 0.36)}; box-shadow: 0 0 14px rgba(255, 255, 255, .55), inset 0 1px 0 #fff; }
         #pane-side span, header[data-testid="conversation-header"] span, ${LIST_HEADER} span, ${LIST_HEADER} h1 { text-shadow: 0 1px 2px rgba(0, 35, 110, .5); }
         ${BUBBLE} { border-radius: 8px !important; }
         [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(255, 255, 255, .78);
@@ -474,7 +477,8 @@
           background-image: linear-gradient(180deg, rgba(255, 255, 255, .3), rgba(255, 255, 255, .12)) !important; box-shadow: inset 0 1px 2px rgba(0, 30, 100, .25); }
         [role="tab"] { border-radius: 6px !important; border: 1px solid rgba(255, 255, 255, .78) !important; background: ${glass(0.38, 0.14, 0.04, 0.16)} !important; }
         ${TAB_ON} { background: ${glass(0.78, 0.5, 0.34, 0.55)} !important; }
-        ${TAB_ON}, ${TAB_ON} * { color: #0b4fc0 !important; text-shadow: none !important; }`,
+        ${TAB_ON}, ${TAB_ON} * { color: #0b4fc0 !important; text-shadow: none !important; }
+        [data-testid="chatlist-e2e-message"] * { color: #e8f2ff !important; }`,
     },
     // Dark smoked glass with a glowing coral accent.
     coral: {
@@ -515,11 +519,11 @@
       name: 'Esmeralda', bar: '#000000', panel: '#ffffff', chat: '#f4f7f6', raised: '#ffffff', high: '#eaf2ee',
       incoming: '#ffffff', outgoing: '#d2f1e3', composer: '#eef3f1', accent: '#0c8a64', selected: '#d2f1e3',
       onAccent: '#ffffff', rows: 99, highlight: 'rgba(12, 138, 100, .08)', text: '#0f2a20', muted: '#5a6f66',
-      listText: '#ffffff', listMuted: 'rgba(255, 255, 255, .72)',
+      listText: '#ffffff', listMuted: 'rgba(255, 255, 255, .72)', preview: '#0b6a50',
       font: '"Segoe UI Variable Display", "Segoe UI", sans-serif', lockRadius: 28, card: '#ffffff',
       frame: `${STARS}, radial-gradient(75% 55% at 50% -5%, #0d7e5e, #06402f 45%, transparent 80%), #000`,
       // The list sits on green glass, so it takes its own light-on-dark colors.
-      zones: [['.two > div:has(> #side) *, .two > header[data-testid="chatlist-header"] *, [data-testid="drawer-left"] header *', {
+      zones: [['.two > div:has(> #side) *, .two > header[data-testid="chatlist-header"] *', {
         accent: '#ffffff', selected: '#ffffff33', onAccent: '#0a5c45', panel: '#ffffff00', chat: '#ffffff00', raised: '#ffffff1f',
         high: '#ffffff2e', incoming: '#ffffff1f', outgoing: '#ffffff2e', composer: '#ffffff1f', bar: '#ffffff00',
         highlight: 'rgba(255, 255, 255, .1)', text: '#ffffff', muted: '#cfeee2',
@@ -532,11 +536,12 @@
         ${RAIL_ITEM} { border-radius: 50% !important; background-color: rgba(255, 255, 255, .12) !important; }
         ${RAIL_ACTIVE} { background-color: #ffffff !important; }
         ${RAIL_ACTIVE_ICON} { color: #0a1f18 !important; }
-        ${LIST_BOX}, ${LEFT_DRAWER} { margin: 10px 0 10px 10px; height: calc(100% - 20px); border-radius: 30px 0 0 30px; overflow: hidden;
+        ${LIST_BOX} { margin: 10px 0 10px 10px; height: calc(100% - 20px); border-radius: 30px 0 0 30px; overflow: hidden;
           background: linear-gradient(180deg, #13916c, #0b6a50 45%, #074634); border: 1px solid rgba(255, 255, 255, .22); border-right: 0;
           box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
-        ${LEFT_DRAWER} { background: #ffffff; }
-        ${LEFT_DRAWER} header { background: linear-gradient(180deg, #13916c, #0b6a50) !important; }
+        /* Drawers stay in the page while closed: only their open content gets painted. */
+        ${LEFT_DRAWER} { margin: 10px 0 10px 84px; height: calc(100% - 20px); border-radius: 30px 0 0 30px; overflow: hidden; }
+        ${MIDDLE_OPEN} { margin: 10px 10px 10px 0; height: calc(100% - 20px); border-radius: 26px 30px 30px 26px; overflow: hidden; background: #f4f7f6; }
         ${CHAT_BOX} { margin: 10px 10px 10px 0; height: calc(100% - 20px); border-radius: 26px 30px 30px 26px; overflow: hidden;
           background: #f4f7f6; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); }
         ${CHAT_HEADER} { background: #ffffff !important; border-bottom: 1px solid #e3ebe7; }
@@ -553,6 +558,7 @@
           --WDS-content-deemphasized: #4b5f57 !important; --WDS-accent: #0c8a64 !important; --WDS-content-on-accent: #ffffff !important; }
         ${BUBBLE} { border-radius: 16px !important; }
         [data-testid="msg-container"] > div:first-of-type { box-shadow: 0 2px 10px rgba(10, 60, 40, .1); }
+        [data-testid="quoted-message"] > div { background-color: rgba(12, 138, 100, .08) !important; }
         ${COMPOSER} { border-radius: 99px !important; }
         [role="tab"] { border-radius: 99px !important; }
         ${TAB_ON} { background: #ffffff !important; }
@@ -600,14 +606,16 @@
         ${seeThrough}
         #app { letter-spacing: .2px; }
         ${RAIL} { margin: 10px 0 10px 10px; height: calc(100% - 20px); border-radius: 26px 0 0 26px; overflow: hidden; background: #0a0f1c !important; }
-        ${LIST_BOX}, ${LEFT_DRAWER} { margin: 10px 0; height: calc(100% - 20px); overflow: hidden; background: #141c2e; }
+        ${LIST_BOX} { margin: 10px 0; height: calc(100% - 20px); overflow: hidden; background: #141c2e; }
+        ${LEFT_DRAWER} { margin: 10px 0 10px 74px; height: calc(100% - 20px); overflow: hidden; }
+        ${MIDDLE_OPEN} { margin: 10px 10px 10px 0; height: calc(100% - 20px); border-radius: 0 26px 26px 0; overflow: hidden; background: #1a2335; }
         ${CHAT_BOX} { margin: 10px 10px 10px 0; height: calc(100% - 20px); border-radius: 0 26px 26px 0; overflow: hidden;
           background: #1a2335; border-left: 1px solid rgba(255, 255, 255, .05); }
         ${RAIL_ITEM} { border-radius: 50% !important; }
         ${RAIL_ACTIVE} { background: #2a3346 !important; }
         ${CHAT_HEADER}, ${LIST_HEADER} { background: transparent !important; border-bottom: 1px solid rgba(255, 255, 255, .08); }
         ${LIST_HEADER} header { background: transparent !important; }
-        header[data-testid="conversation-header"] button { border: 1.5px solid rgba(255, 255, 255, .7) !important; border-radius: 99px !important; }
+        header[data-testid="conversation-header"] button:not([data-testid="conversation-info-header-button"]) { border: 1.5px solid rgba(255, 255, 255, .7) !important; border-radius: 99px !important; }
         [data-testid="chat-list-search-container"] div { border-radius: 30px !important; }
         #pane-side { background: transparent !important; }
         ${ROWS} { --WDS-surface-default: transparent !important; --WDS-surface-highlight: rgba(255, 255, 255, .05) !important;
@@ -661,6 +669,8 @@
       body.dark ::-webkit-scrollbar-thumb { background-color: rgba(${a}, .18) !important; border-radius: 99px; }
       body.dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(${a}, .32) !important; }
       body.dark .two { background: ${theme.frame || theme.bar} !important; }
+      /* Closed drawers stay in the page; their divider would show as a stray line between floating panels. */
+      body.dark [data-testid^="drawer-"]:not(:has(span *)) { border-color: transparent !important; }
       /* The password lock screen takes the theme too. */
       ${LOCK} { background: ${theme.screen || theme.frame || theme.bar} !important; }
       ${LOCK} main { background: ${theme.card || theme.raised} !important; border-radius: ${theme.lockRadius ?? 24}px;
@@ -980,8 +990,9 @@
     #pulso-panel .box { width: min(480px, calc(100vw - 40px)); max-height: calc(100vh - 80px); overflow-y: auto;
       box-sizing: border-box; padding: 20px; border-radius: 18px; background: var(--p-raised);
       border: 1px solid rgba(255, 255, 255, .08); box-shadow: 0 20px 56px rgba(0, 0, 0, .5); }
-    #pulso-panel .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
-      cursor: move; user-select: none; touch-action: none; }
+    /* Stays at the top while the list scrolls, so the panel can always be dragged and closed. */
+    #pulso-panel .head { display: flex; align-items: center; justify-content: space-between; margin: -20px -20px 14px; padding: 20px 20px 10px;
+      position: sticky; top: -20px; z-index: 2; background: var(--p-raised); cursor: move; user-select: none; touch-action: none; }
     #pulso-panel h2 { margin: 0; font-size: 18px; font-weight: 600; }
     #pulso-panel h3 { margin: 16px 0 6px; font-size: 12.5px; font-weight: 600; color: var(--p-accent); }
     #pulso-panel button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
@@ -1068,7 +1079,7 @@
     for (const [id, t] of Object.entries(THEMES)) {
       const card = document.createElement('button');
       card.className = id === current() ? 'theme on' : 'theme';
-      card.innerHTML = `<span class="mini"><i style="background:${t.panel}"></i><b style="background:${t.chat}">
+      card.innerHTML = `<span class="mini"><i style="background:${t.preview || t.panel}"></i><b style="background:${t.chat}">
         <u style="background:${t.incoming}"></u><u style="background:${t.outgoing}"></u></b></span>`;
       card.append(t.name);
       card.addEventListener('click', () => {
