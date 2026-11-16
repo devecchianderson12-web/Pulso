@@ -1,8 +1,8 @@
-version: 2.13.0
+version: 2.13.1
 files:
-  - url: https://github.com/devecchianderson12-web/Pulso/releases/download/v2.13.0/Pulso-Setup-2.13.0.exe
-    sha512: AjjGaKIph3uevitZa1Y8c9OuxtyEugpFF9cr9Q0RG1OuGKa7AiqAr2gUHujp7cvwphw/y/yTKasuVsFgF9KCYw==
-    size: 86609372
-path: https://github.com/devecchianderson12-web/Pulso/releases/download/v2.13.0/Pulso-Setup-2.13.0.exe
-sha512: AjjGaKIph3uevitZa1Y8c9OuxtyEugpFF9cr9Q0RG1OuGKa7AiqAr2gUHujp7cvwphw/y/yTKasuVsFgF9KCYw==
-releaseDate: '2026-11-16T18:20:20.087Z'
+  - url: https://github.com/devecchianderson12-web/Pulso/releases/download/v2.13.1/Pulso-Setup-2.13.1.exe
+    sha512: mjs6PZWVoTsWRIo0RJsETNOya0tCryky1Ju4GLwDAv/HR66o9ZHSERJ96SDuKXMa5BscYc8Zd2Mu/Jn6uOyVPg==
+    size: 86609701
+path: https://github.com/devecchianderson12-web/Pulso/releases/download/v2.13.1/Pulso-Setup-2.13.1.exe
+sha512: mjs6PZWVoTsWRIo0RJsETNOya0tCryky1Ju4GLwDAv/HR66o9ZHSERJ96SDuKXMa5BscYc8Zd2Mu/Jn6uOyVPg==
+releaseDate: '2026-11-16T18:39:39.303Z'
