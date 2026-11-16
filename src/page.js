@@ -84,7 +84,8 @@
   const TAILS = '[data-testid="tail-out"], [data-testid="tail-in"]';
   const RAIL_ITEM = '[data-testid="navbar-primary-section"] span > div, [data-testid="navbar-primary-section"] button';
   const COMPOSER = '[data-testid="compose-box"] span > div > div > div';
-  const WALLPAPER = '[data-testid^="conversation-background"], [data-testid^="stock-wallpaper"]';
+  // Only WhatsApp's default doodle pattern: a wallpaper chosen in Ajustes > Chats > Fondo shows in every theme.
+  const WALLPAPER = '[data-testid^="conversation-background"]';
   const LOCK = '[data-testid="lock-screen-landing-window"]';
   const RAIL = '.two > header[data-testid="chatlist-header"]';
   const LIST_HEADER = '.two > div > header[data-testid="chatlist-header"]';
