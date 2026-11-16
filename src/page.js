@@ -92,6 +92,8 @@
   const LEFT_DRAWER = '[data-testid="drawer-left"]';
   // Drawers stay in the page while closed (empty): only an open one gets painted.
   const MIDDLE_OPEN = '[data-testid="drawer-middle"]:has(span *)';
+  // A closed drawer's border is the list/chat divider in flat themes, but a stray line between floating panels.
+  const NO_DRAWER_LINES = '[data-testid^="drawer-"]:not(:has(span *)) { border-color: transparent !important; }';
   const ROWS = '#pane-side [data-testid="cell-frame-container"], [data-testid^="drawer-"] [data-testid="cell-frame-container"], [data-testid="dropdown"] [data-testid="cell-frame-container"]';
   const PILLS = `${BUBBLE} { border-radius: 20px !important; }
     ${TAILS}, ${WALLPAPER} { display: none !important; }`;
@@ -99,7 +101,8 @@
     ${LIST_BOX}, ${CHAT_BOX} { margin: 10px 0; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; }
     ${CHAT_BOX} { margin-left: 10px; margin-right: 10px; }
     ${LEFT_DRAWER} { margin-top: 10px; margin-bottom: 10px; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; }
-    ${MIDDLE_OPEN} { margin: 10px; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; background: var(--WDS-background-wash-plain); }`;
+    ${MIDDLE_OPEN} { margin: 10px; height: calc(100% - 20px); border-radius: ${radius}px; overflow: hidden; background: var(--WDS-background-wash-plain); }
+    ${NO_DRAWER_LINES}`;
 
   // Chat rows drawn like glossy message bubbles. WhatsApp paints rows with these two variables,
   // so setting them on the list keeps its own hover and selected states working.
@@ -271,6 +274,7 @@
           border-radius: 0 0 3px 3px; overflow: hidden; }
         ${LEFT_DRAWER} { margin-bottom: 4px; height: calc(100% - 4px); margin-left: 68px; border: 3px solid #0831d9; border-top-width: 0;
           border-radius: 0 0 3px 3px; overflow: hidden; }
+        ${NO_DRAWER_LINES}
         ${CHAT_BOX} { margin-right: 4px;
           background: radial-gradient(150% 52% at 25% 100%, #6fb83a 60%, #5aa52c 61%, transparent 62%),
             linear-gradient(180deg, #2a78e4, #8cc4f2 55%, #cfe7fa 74%); }
@@ -542,6 +546,7 @@
         /* Drawers stay in the page while closed: only their open content gets painted. */
         ${LEFT_DRAWER} { margin: 10px 0 10px 84px; height: calc(100% - 20px); border-radius: 30px 0 0 30px; overflow: hidden; }
         ${MIDDLE_OPEN} { margin: 10px 10px 10px 0; height: calc(100% - 20px); border-radius: 26px 30px 30px 26px; overflow: hidden; background: #f4f7f6; }
+        ${NO_DRAWER_LINES}
         ${CHAT_BOX} { margin: 10px 10px 10px 0; height: calc(100% - 20px); border-radius: 26px 30px 30px 26px; overflow: hidden;
           background: #f4f7f6; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); }
         ${CHAT_HEADER} { background: #ffffff !important; border-bottom: 1px solid #e3ebe7; }
@@ -609,6 +614,7 @@
         ${LIST_BOX} { margin: 10px 0; height: calc(100% - 20px); overflow: hidden; background: #141c2e; }
         ${LEFT_DRAWER} { margin: 10px 0 10px 74px; height: calc(100% - 20px); overflow: hidden; }
         ${MIDDLE_OPEN} { margin: 10px 10px 10px 0; height: calc(100% - 20px); border-radius: 0 26px 26px 0; overflow: hidden; background: #1a2335; }
+        ${NO_DRAWER_LINES}
         ${CHAT_BOX} { margin: 10px 10px 10px 0; height: calc(100% - 20px); border-radius: 0 26px 26px 0; overflow: hidden;
           background: #1a2335; border-left: 1px solid rgba(255, 255, 255, .05); }
         ${RAIL_ITEM} { border-radius: 50% !important; }
@@ -669,8 +675,6 @@
       body.dark ::-webkit-scrollbar-thumb { background-color: rgba(${a}, .18) !important; border-radius: 99px; }
       body.dark ::-webkit-scrollbar-thumb:hover { background-color: rgba(${a}, .32) !important; }
       body.dark .two { background: ${theme.frame || theme.bar} !important; }
-      /* Closed drawers stay in the page; their divider would show as a stray line between floating panels. */
-      body.dark [data-testid^="drawer-"]:not(:has(span *)) { border-color: transparent !important; }
       /* The password lock screen takes the theme too. */
       ${LOCK} { background: ${theme.screen || theme.frame || theme.bar} !important; }
       ${LOCK} main { background: ${theme.card || theme.raised} !important; border-radius: ${theme.lockRadius ?? 24}px;
