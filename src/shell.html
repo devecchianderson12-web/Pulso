@@ -94,6 +94,63 @@
   [data-theme="crystal"] .bar { background: linear-gradient(90deg, #0c1a3f, #27305e 45%, #5a2547); }
   [data-theme="pill"] .bar { background: linear-gradient(90deg, #1b2a7a, #2c35a0 55%, #7f7a8c); }
 
+  /* Vidrio azul: sky-blue bar with glossy, white-rimmed glass buttons. */
+  [data-theme="vista"] { --accent: #ffffff; --fg: #ffffff; font-family: "Segoe UI", Tahoma, sans-serif; }
+  [data-theme="vista"] .bar { background: radial-gradient(40% 300% at 8% 0, rgba(255, 255, 255, .4), transparent 70%),
+    linear-gradient(180deg, #5aa2f6, #2675e8 60%, #1c6ce0); }
+  [data-theme="vista"] .brand span { text-shadow: 0 1px 3px rgba(0, 30, 100, .6); }
+  [data-theme="vista"] .pill { color: #0b4fc0; box-shadow: inset 0 -6px 8px rgba(11, 79, 192, .18); }
+  [data-theme="vista"] .controls { align-items: center; gap: 4px; padding-right: 8px; }
+  [data-theme="vista"] .controls button { width: 34px; height: 24px; border-radius: 5px; color: #fff; border: 1px solid rgba(255, 255, 255, .85);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .45), rgba(255, 255, 255, .15) 48%, rgba(255, 255, 255, .04) 52%, rgba(255, 255, 255, .2));
+    box-shadow: 0 1px 4px rgba(0, 30, 100, .35), inset 0 1px 0 rgba(255, 255, 255, .8); }
+  [data-theme="vista"] .controls button:hover { background: linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(255, 255, 255, .38) 48%, rgba(255, 255, 255, .22) 52%, rgba(255, 255, 255, .42)); }
+  [data-theme="vista"] .controls #close:hover { background: linear-gradient(180deg, #f8a48e, #e0442a 48%, #c3301a 52%, #e86a4c); color: #fff; }
+
+  /* Coral nocturno: smoked dark bar, coral glow. */
+  [data-theme="coral"] { --accent: #ff6b5a; font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif; }
+  [data-theme="coral"] .bar { background: radial-gradient(50% 300% at 50% -120%, #4a5160, transparent 70%), #2a2f38; }
+  [data-theme="coral"] .brand span { text-shadow: 0 0 10px rgba(255, 255, 255, .4); }
+  [data-theme="coral"] .pill { color: #fff; box-shadow: 0 0 12px rgba(255, 107, 90, .6); }
+  [data-theme="coral"] .controls { align-items: center; gap: 4px; padding-right: 8px; }
+  [data-theme="coral"] .controls button { width: 34px; height: 26px; border-radius: 8px; color: #c5cad3; }
+  [data-theme="coral"] .controls button:hover { background: rgba(255, 255, 255, .08); }
+  [data-theme="coral"] .controls #close:hover { background: #ff6b5a; color: #fff; box-shadow: 0 0 16px rgba(255, 107, 90, .65); }
+
+  /* Esmeralda: black with a green glow, round glass buttons. */
+  [data-theme="emerald"] { --accent: #ffffff; font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif; }
+  [data-theme="emerald"] .bar { background: radial-gradient(45% 420% at 50% -160%, #0d7e5e, transparent 80%), #000; }
+  [data-theme="emerald"] .pill { color: #0a5c45; }
+  [data-theme="emerald"] .controls { align-items: center; gap: 6px; padding-right: 10px; }
+  [data-theme="emerald"] .controls button { width: 28px; height: 28px; border-radius: 50%; color: #fff;
+    background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .22); }
+  [data-theme="emerald"] .controls button:hover { background: rgba(255, 255, 255, .26); }
+  [data-theme="emerald"] .controls #close:hover { background: #fff; color: #0a3d2f; }
+
+  /* Violeta: night indigo bar, three colored dots for the window buttons. */
+  [data-theme="violet"] { --accent: #7c5cff; font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif; }
+  [data-theme="violet"] .bar { background: #0d0b1e; }
+  [data-theme="violet"] .pill { color: #fff; box-shadow: 0 4px 14px rgba(124, 92, 255, .5); }
+  [data-theme="violet"] .controls { padding-right: 10px; }
+  [data-theme="violet"] .controls button { width: 24px; color: transparent; background: radial-gradient(circle, var(--dot) 6.5px, transparent 7px); }
+  [data-theme="violet"] .controls svg { width: 7px; height: 7px; stroke-width: 1.6; }
+  [data-theme="violet"] #minimize { --dot: #3f6bff; }
+  [data-theme="violet"] #maximize { --dot: #6a4cf0; }
+  [data-theme="violet"] #close { --dot: #ff4f8b; }
+  [data-theme="violet"] .controls button:hover,
+  [data-theme="violet"] .controls #close:hover,
+  [data-theme="violet"] .controls button:active,
+  [data-theme="violet"] .controls #close:active { color: #0d0b1e; background: radial-gradient(circle, var(--dot) 6.5px, transparent 7px); filter: brightness(1.2); }
+
+  /* Marino: navy bar, outlined round buttons. */
+  [data-theme="navy"] { --accent: #5b52f0; font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif; }
+  [data-theme="navy"] .bar { background: #0d1424; }
+  [data-theme="navy"] .pill { color: #fff; }
+  [data-theme="navy"] .controls { align-items: center; gap: 6px; padding-right: 10px; }
+  [data-theme="navy"] .controls button { width: 28px; height: 28px; border-radius: 50%; color: #e6eaf3; border: 1.5px solid rgba(255, 255, 255, .7); }
+  [data-theme="navy"] .controls button:hover { background: #2a3548; }
+  [data-theme="navy"] .controls #close:hover { background: #5b52f0; border-color: #5b52f0; color: #fff; }
+
   /* Luna azul: glossy blue title bar with beveled caption buttons. */
   [data-theme="luna"] { font: 700 13px/1 Tahoma, "Segoe UI", sans-serif; }
   [data-theme="luna"] .bar {

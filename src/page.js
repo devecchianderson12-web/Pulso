@@ -136,6 +136,21 @@
   const CLOUDS = `radial-gradient(9% 7% at 20% 14%, #fff 60%, transparent 62%), radial-gradient(13% 8% at 27% 16%, #fff 60%, transparent 62%),
     radial-gradient(7% 5% at 15% 17%, #fff 60%, transparent 62%), radial-gradient(10% 6% at 70% 9%, #fff 60%, transparent 62%),
     radial-gradient(14% 7% at 78% 11%, #fff 60%, transparent 62%)`;
+  // The open chat's row, the current rail button and the chosen filter chip.
+  const SELECTED_ROW = '#pane-side [aria-selected="true"] [data-testid="cell-frame-container"]';
+  const RAIL_ACTIVE = '[data-testid="navbar-primary-section"] [aria-pressed="true"], [data-testid="navbar-primary-section"] [data-navbar-item-selected="true"]';
+  const RAIL_ACTIVE_ICON = '[data-testid="navbar-primary-section"] [aria-pressed="true"] svg, [data-testid="navbar-primary-section"] [data-navbar-item-selected="true"] svg';
+  const TAB_ON = '[role="tab"][aria-selected="true"]';
+  const OUT_BUBBLE = '.message-out [data-testid="msg-container"] > div:first-of-type';
+  const svgUrl = (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  // Glossy glass: bright top half, a hard shine line, then a darker lower half.
+  const glass = (top, mid, low, end) => `linear-gradient(180deg, rgba(255, 255, 255, ${top}), rgba(255, 255, 255, ${mid}) 48%, rgba(255, 255, 255, ${low}) 52%, rgba(255, 255, 255, ${end}))`;
+  const VISTA_SKY = `${svgUrl('<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="230"><text x="0" y="190" font-family="Segoe UI, sans-serif" font-size="210" fill="#fff" fill-opacity=".1" letter-spacing="-4">pulso</text></svg>')} right 2% bottom -4% / 62% auto no-repeat,
+    linear-gradient(112deg, transparent 28%, rgba(255, 255, 255, .16) 36%, transparent 44%, transparent 56%, rgba(255, 255, 255, .1) 63%, transparent 71%),
+    radial-gradient(45% 32% at 10% 6%, rgba(255, 255, 255, .5), transparent 70%),
+    radial-gradient(120% 95% at 65% 35%, #3f90f3, #0d58d4 55%, #0636a2)`;
+  const MOUNTAINS = svgUrl('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" preserveAspectRatio="none"><path d="M0 300V185l110-55 95 42 150-112 115 84 95-42 150 118 125-72 160 92v60z" fill="#3b2b6e" fill-opacity=".6"/><path d="M0 300v-58l170-52 140 48 185-92 160 92 140-42 205 72v32z" fill="#1b1436" fill-opacity=".92"/></svg>');
+  const STARS = 'radial-gradient(1px 1px at 22% 12%, #fff, transparent), radial-gradient(1px 1px at 36% 6%, #fff, transparent), radial-gradient(1px 1px at 47% 9%, #fff, transparent), radial-gradient(1.5px 1.5px at 63% 4%, #fff, transparent), radial-gradient(1px 1px at 78% 14%, #fff, transparent), radial-gradient(1px 1px at 12% 30%, #fff, transparent), radial-gradient(1px 1px at 88% 34%, #fff, transparent)';
 
   const THEMES = {
     pulso: {
@@ -268,7 +283,7 @@
         [role="tab"] { border-radius: 3px !important; border: 1px solid #003c74 !important;
           background: linear-gradient(180deg, #ffffff, #f0efe6 80%, #d6d0c5) !important; color: #000000 !important; }
         [role="tab"] * { color: #000000 !important; }
-        \${LIST_HEADER} header { background: transparent !important; }
+        ${LIST_HEADER} header { background: transparent !important; }
         #pane-side [data-testid="cell-frame-container"] { border-radius: 0 !important; }
         ::-webkit-scrollbar { width: 16px !important; height: 16px !important; }
         ::-webkit-scrollbar-track { background: #f1eee3 !important; }
@@ -426,6 +441,184 @@
         ${ROWS} { border-radius: 22px !important; }
         ${COMPOSER} { border-radius: 30px !important; }`,
     },
+    // Glass menu over a bright blue sky: glossy white-rimmed buttons and see-through panes.
+    vista: {
+      name: 'Vidrio azul', bar: '#1c6ce0', panel: '#2a6fd8', chat: '#1f63d0', raised: '#3479de', high: '#4a8ff0',
+      incoming: '#ffffff33', outgoing: '#2f7fe8', composer: '#ffffff2e', accent: '#ffffff', selected: '#ffffff47',
+      onAccent: '#0b4fc0', rows: 6, highlight: 'rgba(255, 255, 255, .2)', text: '#ffffff', muted: '#dbe9ff',
+      font: '"Segoe UI", Tahoma, sans-serif', lockRadius: 10, card: glass(0.42, 0.22, 0.12, 0.26),
+      inBg: glass(0.42, 0.2, 0.1, 0.24), outBg: 'linear-gradient(180deg, #82bfff, #3d8cf2 48%, #2470e0 52%, #4d98f5)',
+      frame: VISTA_SKY,
+      layout: `${noWallpaper}
+        ${floatingCards(12)}
+        ${seeThrough}
+        ${LIST_BOX}, ${CHAT_BOX} { border: 2px solid rgba(255, 255, 255, .78); backdrop-filter: blur(8px);
+          box-shadow: 0 18px 44px rgba(0, 30, 110, .45), inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 0 0 1px rgba(255, 255, 255, .25); }
+        ${LIST_BOX} { background: linear-gradient(180deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, .1)); }
+        ${CHAT_BOX} { background: linear-gradient(160deg, rgba(255, 255, 255, .32), rgba(255, 255, 255, .13) 40%, rgba(255, 255, 255, .07)); }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: ${glass(0.36, 0.16, 0.06, 0.16)} !important; border-bottom: 1px solid rgba(255, 255, 255, .6); }
+        ${LIST_HEADER} header { background: transparent !important; }
+        ${RAIL} { background: linear-gradient(90deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, .06)) !important; border-right: 1px solid rgba(255, 255, 255, .45); }
+        ${RAIL_ITEM} { border-radius: 6px !important; }
+        ${RAIL_ACTIVE} { background: ${glass(0.62, 0.32, 0.18, 0.36)} !important; box-shadow: 0 0 0 1px #fff, 0 0 12px rgba(255, 255, 255, .6); }
+        #pane-side { background: transparent !important; }
+        ${ROWS} { --WDS-surface-default: transparent !important; --WDS-surface-highlight: rgba(255, 255, 255, .2) !important;
+          margin: 0 8px; border: 1px solid rgba(255, 255, 255, .78); border-radius: 6px !important;
+          background-image: ${glass(0.38, 0.16, 0.05, 0.18)}; box-shadow: 0 2px 6px rgba(0, 40, 130, .35), inset 0 1px 0 rgba(255, 255, 255, .85); }
+        ${SELECTED_ROW} { background-image: ${glass(0.7, 0.42, 0.28, 0.46)}; box-shadow: 0 0 14px rgba(255, 255, 255, .55), inset 0 1px 0 #fff; }
+        #pane-side span, header[data-testid="conversation-header"] span, ${LIST_HEADER} span, ${LIST_HEADER} h1 { text-shadow: 0 1px 2px rgba(0, 35, 110, .5); }
+        ${BUBBLE} { border-radius: 8px !important; }
+        [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(255, 255, 255, .78);
+          box-shadow: 0 2px 8px rgba(0, 40, 130, .3), inset 0 1px 0 rgba(255, 255, 255, .8); }
+        ${COMPOSER} { border-radius: 6px !important; border: 1px solid rgba(255, 255, 255, .78);
+          background-image: linear-gradient(180deg, rgba(255, 255, 255, .3), rgba(255, 255, 255, .12)) !important; box-shadow: inset 0 1px 2px rgba(0, 30, 100, .25); }
+        [role="tab"] { border-radius: 6px !important; border: 1px solid rgba(255, 255, 255, .78) !important; background: ${glass(0.38, 0.14, 0.04, 0.16)} !important; }
+        ${TAB_ON} { background: ${glass(0.78, 0.5, 0.34, 0.55)} !important; }
+        ${TAB_ON}, ${TAB_ON} * { color: #0b4fc0 !important; text-shadow: none !important; }`,
+    },
+    // Dark smoked glass with a glowing coral accent.
+    coral: {
+      name: 'Coral nocturno', bar: '#2a2f38', panel: '#1f232a', chat: '#22262d', raised: '#2a2f37', high: '#343a44',
+      incoming: '#2c3139', outgoing: '#e9594a', composer: '#ffffff0f', accent: '#ff6b5a', selected: '#ff6b5a38',
+      onAccent: '#ffffff', rows: 10, highlight: 'rgba(255, 255, 255, .05)', text: '#eceef2', muted: '#9ca3af',
+      font: '"Segoe UI Variable Display", "Segoe UI", sans-serif', lockRadius: 18, card: 'linear-gradient(180deg, #2c313a, #1c1f25)',
+      outBg: 'linear-gradient(180deg, #ff806e, #e5503f)',
+      frame: 'radial-gradient(70% 50% at 50% -10%, #4a5160, transparent 70%), linear-gradient(180deg, #2a2f38, #15181d)',
+      layout: `${noWallpaper}
+        ${floatingCards(18)}
+        ${seeThrough}
+        ${LIST_BOX}, ${CHAT_BOX} { border: 1px solid rgba(255, 255, 255, .09); backdrop-filter: blur(10px);
+          box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .06); }
+        ${LIST_BOX} { background: linear-gradient(180deg, rgba(44, 49, 58, .94), rgba(28, 31, 37, .96)); }
+        ${CHAT_BOX} { background: radial-gradient(90% 50% at 30% 0, rgba(255, 255, 255, .05), transparent 70%), linear-gradient(180deg, rgba(34, 38, 45, .96), rgba(25, 28, 33, .98)); }
+        ${RAIL} { background: transparent !important; }
+        ${RAIL_ITEM} { border-radius: 10px !important; }
+        ${RAIL_ACTIVE} { background: rgba(255, 107, 90, .22) !important; box-shadow: 0 0 0 1px rgba(255, 130, 110, .55), 0 0 18px rgba(255, 90, 70, .35); }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: transparent !important; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+        ${LIST_HEADER} header { background: transparent !important; }
+        ${LIST_HEADER} h1 { text-shadow: 0 0 14px rgba(255, 255, 255, .4); }
+        #pane-side { background: transparent !important; }
+        ${ROWS} { --WDS-surface-default: transparent !important; --WDS-surface-highlight: rgba(255, 255, 255, .05) !important;
+          margin: 0 8px; border: 1px solid transparent; border-radius: 10px !important; }
+        ${SELECTED_ROW} { background: rgba(255, 107, 90, .2) !important; border-color: rgba(255, 130, 110, .6);
+          box-shadow: 0 0 18px rgba(255, 90, 70, .3), inset 0 1px 0 rgba(255, 255, 255, .08); }
+        ${BUBBLE} { border-radius: 12px !important; }
+        [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(255, 255, 255, .07); }
+        ${OUT_BUBBLE} { border-color: rgba(255, 160, 140, .5); box-shadow: 0 0 16px rgba(255, 90, 70, .3); }
+        ${COMPOSER} { border-radius: 12px !important; border: 1px solid rgba(255, 255, 255, .12); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06); }
+        [role="tab"] { border-radius: 99px !important; border: 1px solid rgba(255, 255, 255, .1) !important; background: rgba(255, 255, 255, .05) !important; }
+        ${TAB_ON} { background: linear-gradient(180deg, #ffb3a6, #ff8a78) !important; box-shadow: 0 0 16px rgba(255, 107, 90, .55); }
+        ${TAB_ON}, ${TAB_ON} * { color: #3a0d07 !important; }`,
+    },
+    // Emerald glass capsules on black; the open chat's row turns white and joins the white chat.
+    emerald: {
+      name: 'Esmeralda', bar: '#000000', panel: '#ffffff', chat: '#f4f7f6', raised: '#ffffff', high: '#eaf2ee',
+      incoming: '#ffffff', outgoing: '#d2f1e3', composer: '#eef3f1', accent: '#0c8a64', selected: '#d2f1e3',
+      onAccent: '#ffffff', rows: 99, highlight: 'rgba(12, 138, 100, .08)', text: '#0f2a20', muted: '#5a6f66',
+      listText: '#ffffff', listMuted: 'rgba(255, 255, 255, .72)',
+      font: '"Segoe UI Variable Display", "Segoe UI", sans-serif', lockRadius: 28, card: '#ffffff',
+      frame: `${STARS}, radial-gradient(75% 55% at 50% -5%, #0d7e5e, #06402f 45%, transparent 80%), #000`,
+      // The list sits on green glass, so it takes its own light-on-dark colors.
+      zones: [['.two > div:has(> #side) *, .two > header[data-testid="chatlist-header"] *, [data-testid="drawer-left"] header *', {
+        accent: '#ffffff', selected: '#ffffff33', onAccent: '#0a5c45', panel: '#ffffff00', chat: '#ffffff00', raised: '#ffffff1f',
+        high: '#ffffff2e', incoming: '#ffffff1f', outgoing: '#ffffff2e', composer: '#ffffff1f', bar: '#ffffff00',
+        highlight: 'rgba(255, 255, 255, .1)', text: '#ffffff', muted: '#cfeee2',
+      }]],
+      layout: `${noWallpaper}
+        ${seeThrough}
+        ${RAIL} { margin: 10px 0 10px 10px; height: calc(100% - 20px); border-radius: 30px; overflow: hidden;
+          background: linear-gradient(180deg, #13916c, #0b6a50 45%, #074634) !important; border: 1px solid rgba(255, 255, 255, .22);
+          box-shadow: 0 20px 50px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .25); }
+        ${RAIL_ITEM} { border-radius: 50% !important; background-color: rgba(255, 255, 255, .12) !important; }
+        ${RAIL_ACTIVE} { background-color: #ffffff !important; }
+        ${RAIL_ACTIVE_ICON} { color: #0a1f18 !important; }
+        ${LIST_BOX}, ${LEFT_DRAWER} { margin: 10px 0 10px 10px; height: calc(100% - 20px); border-radius: 30px 0 0 30px; overflow: hidden;
+          background: linear-gradient(180deg, #13916c, #0b6a50 45%, #074634); border: 1px solid rgba(255, 255, 255, .22); border-right: 0;
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25); }
+        ${LEFT_DRAWER} { background: #ffffff; }
+        ${LEFT_DRAWER} header { background: linear-gradient(180deg, #13916c, #0b6a50) !important; }
+        ${CHAT_BOX} { margin: 10px 10px 10px 0; height: calc(100% - 20px); border-radius: 26px 30px 30px 26px; overflow: hidden;
+          background: #f4f7f6; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); }
+        ${CHAT_HEADER} { background: #ffffff !important; border-bottom: 1px solid #e3ebe7; }
+        ${LIST_HEADER} { background: transparent !important; }
+        ${LIST_HEADER} header { background: transparent !important; }
+        [data-testid="chat-list-search-container"] div { border-radius: 99px !important; }
+        #pane-side { background: transparent !important; }
+        ${ROWS} { --WDS-surface-default: transparent !important; margin: 0 0 0 12px; border-radius: 99px 0 0 99px !important;
+          background-image: linear-gradient(90deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, .06)); border: 1px solid rgba(255, 255, 255, .1); border-right: 0; }
+        ${SELECTED_ROW} { background: #ffffff !important; border-color: #ffffff; }
+        /* No scrollbar between the open chat's row and the chat, so the white joins up. */
+        #pane-side::-webkit-scrollbar { width: 0 !important; }
+        ${SELECTED_ROW}, ${SELECTED_ROW} * { --WDS-content-default: #0a1f18 !important; --WDS-content-action-default: #0a1f18 !important;
+          --WDS-content-deemphasized: #4b5f57 !important; --WDS-accent: #0c8a64 !important; --WDS-content-on-accent: #ffffff !important; }
+        ${BUBBLE} { border-radius: 16px !important; }
+        [data-testid="msg-container"] > div:first-of-type { box-shadow: 0 2px 10px rgba(10, 60, 40, .1); }
+        ${COMPOSER} { border-radius: 99px !important; }
+        [role="tab"] { border-radius: 99px !important; }
+        ${TAB_ON} { background: #ffffff !important; }
+        ${TAB_ON}, ${TAB_ON} * { color: #0a3d2f !important; }`,
+    },
+    // Deep violet dashboard: floating cards over a night mountain range.
+    violet: {
+      name: 'Violeta', bar: '#0d0b1e', panel: '#16132c', chat: '#110e24', raised: '#1d1938', high: '#272247',
+      incoming: '#1f1b3a', outgoing: '#6d42f5', composer: '#ffffff0d', accent: '#7c5cff', selected: '#7c5cff40',
+      onAccent: '#ffffff', rows: 12, highlight: 'rgba(124, 92, 255, .12)', text: '#eeeaff', muted: '#a29ec4',
+      font: '"Segoe UI Variable Display", "Segoe UI", sans-serif', lockRadius: 20, card: '#16132ce6',
+      outBg: 'linear-gradient(135deg, #8b6bff, #6236e8)',
+      frame: `${MOUNTAINS} center bottom / 100% 36% no-repeat, radial-gradient(60% 45% at 82% 100%, rgba(140, 80, 220, .5), transparent 70%), linear-gradient(180deg, #0b0a1a, #141030 55%, #2a1d50)`,
+      layout: `${noWallpaper}
+        ${floatingCards(18)}
+        ${seeThrough}
+        ${LIST_BOX}, ${CHAT_BOX} { background: rgba(20, 17, 42, .84); border: 1px solid rgba(160, 140, 255, .14); backdrop-filter: blur(14px);
+          box-shadow: 0 20px 50px rgba(0, 0, 0, .45); }
+        ${RAIL} { margin: 10px 0 10px 8px; height: calc(100% - 20px); border-radius: 20px; overflow: hidden;
+          background: rgba(24, 20, 48, .88) !important; border: 1px solid rgba(160, 140, 255, .16); }
+        ${RAIL_ITEM} { border-radius: 12px !important; }
+        ${RAIL_ACTIVE} { background: linear-gradient(180deg, #8f6bff, #6a3ff0) !important; box-shadow: 0 6px 18px rgba(124, 92, 255, .55); }
+        ${RAIL_ACTIVE_ICON} { color: #ffffff !important; }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: transparent !important; border-bottom: 1px solid rgba(160, 140, 255, .1); }
+        ${LIST_HEADER} header { background: transparent !important; }
+        #pane-side { background: transparent !important; }
+        ${ROWS} { --WDS-surface-default: transparent !important; margin: 0 8px; border-radius: 12px !important; }
+        ${SELECTED_ROW} { background: rgba(124, 92, 255, .18) !important; box-shadow: inset 3px 0 0 #7c5cff; }
+        ${BUBBLE} { border-radius: 14px !important; }
+        [data-testid="msg-container"] > div:first-of-type { border: 1px solid rgba(160, 140, 255, .12); }
+        ${OUT_BUBBLE} { border-color: transparent; box-shadow: 0 6px 18px rgba(124, 92, 255, .35); }
+        ${COMPOSER} { border-radius: 14px !important; border: 1px solid rgba(160, 140, 255, .16); }
+        [role="tab"] { border-radius: 10px !important; }
+        ${TAB_ON} { background: #7c5cff !important; box-shadow: 0 4px 14px rgba(124, 92, 255, .45); }
+        ${TAB_ON}, ${TAB_ON} * { color: #ffffff !important; }`,
+    },
+    // Navy settings console: one rounded card, darkest icon rail, pill rows and outlined buttons.
+    navy: {
+      name: 'Marino', bar: '#0d1424', panel: '#141c2e', chat: '#1a2335', raised: '#1f2940', high: '#2a3548',
+      incoming: '#243049', outgoing: '#5048e5', composer: '#2a3548', accent: '#5b52f0', selected: '#2a3548',
+      onAccent: '#ffffff', rows: 30, highlight: 'rgba(255, 255, 255, .05)', text: '#f1f4fa', muted: '#97a1b6',
+      font: '"Segoe UI Variable Text", "Segoe UI", sans-serif', lockRadius: 26, card: '#141c2e',
+      frame: '#0d1424',
+      layout: `${noWallpaper}
+        ${seeThrough}
+        #app { letter-spacing: .2px; }
+        ${RAIL} { margin: 10px 0 10px 10px; height: calc(100% - 20px); border-radius: 26px 0 0 26px; overflow: hidden; background: #0a0f1c !important; }
+        ${LIST_BOX}, ${LEFT_DRAWER} { margin: 10px 0; height: calc(100% - 20px); overflow: hidden; background: #141c2e; }
+        ${CHAT_BOX} { margin: 10px 10px 10px 0; height: calc(100% - 20px); border-radius: 0 26px 26px 0; overflow: hidden;
+          background: #1a2335; border-left: 1px solid rgba(255, 255, 255, .05); }
+        ${RAIL_ITEM} { border-radius: 50% !important; }
+        ${RAIL_ACTIVE} { background: #2a3346 !important; }
+        ${CHAT_HEADER}, ${LIST_HEADER} { background: transparent !important; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+        ${LIST_HEADER} header { background: transparent !important; }
+        header[data-testid="conversation-header"] button { border: 1.5px solid rgba(255, 255, 255, .7) !important; border-radius: 99px !important; }
+        [data-testid="chat-list-search-container"] div { border-radius: 30px !important; }
+        #pane-side { background: transparent !important; }
+        ${ROWS} { --WDS-surface-default: transparent !important; --WDS-surface-highlight: rgba(255, 255, 255, .05) !important;
+          margin: 0 10px; border-radius: 30px !important; }
+        ${SELECTED_ROW} { background: #2a3548 !important; }
+        ${BUBBLE} { border-radius: 14px !important; }
+        ${COMPOSER} { border-radius: 30px !important; }
+        [role="tab"] { border-radius: 6px !important; background: #2f3a4e !important; }
+        ${TAB_ON} { background: #46526a !important; }
+        [role="tab"], [role="tab"] * { color: #f1f4fa !important; }`,
+    },
   };
 
   const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(', ');
@@ -479,6 +672,7 @@
         border-radius: ${Math.min(theme.lockRadius ?? 99, 99)}px; }
       ${LOCK} main button:not(:has(svg)) * { color: ${theme.onAccent} !important; }
       ${theme.font ? `#app, #app *, #pulso-panel, #pulso-panel * { font-family: ${theme.font}, "Segoe UI Emoji" !important; }` : ''}
+      ${(theme.zones || []).map(([selector, palette]) => `${selector} {${themeVars(palette)}}`).join('\n')}
       ${theme.layout || ''}
     `;
   }
@@ -500,7 +694,10 @@
       ${bubbleRule(bubbleClasses.out, theme.outBg)}
       ${theme.text && textClasses.size ? `${[...textClasses].map((s) => `#main ${s}, #pane-side ${s}`).join(', ')} {
         --WDS-content-default: ${theme.text} !important; --WDS-content-action-default: ${theme.text} !important;
-        --WDS-content-deemphasized: ${theme.muted} !important; }` : ''}`;
+        --WDS-content-deemphasized: ${theme.muted} !important; }` : ''}
+      ${theme.listText && textClasses.size ? `${[...textClasses].map((s) => `#pane-side ${s}`).join(', ')} {
+        --WDS-content-default: ${theme.listText} !important; --WDS-content-action-default: ${theme.listText} !important;
+        --WDS-content-deemphasized: ${theme.listMuted} !important; }` : ''}`;
   };
   function setTheme(id, save) {
     theme = THEMES[id] || THEMES.pulso;
@@ -510,7 +707,8 @@
     if (save) window.pulso.saveTheme(id, theme.bar);
   }
   function updateTheme() {
-    const sheets = [...document.styleSheets].filter((s) => s.ownerNode !== themeStyle);
+    // Pulso's own theme rules also name WhatsApp's variables: skip them, or they'd be overridden as WhatsApp's.
+    const sheets = [...document.styleSheets].filter((s) => s.ownerNode !== themeStyle && s.ownerNode !== shapeStyle);
     let count = 0;
     const readable = [];
     for (const sheet of sheets) {
