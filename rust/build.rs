@@ -9,5 +9,35 @@ fn main() {
     println!("cargo:rerun-if-changed=../src/page.js");
     println!("cargo:rerun-if-changed=src/bridge.js");
     println!("cargo:rerun-if-changed=src/shell-bridge.js");
-    tauri_build::build();
+    // WhatsApp Web is a remote page: Tauri only lets it call commands that are listed here and
+    // granted in capabilities/default.json.
+    let commands = [
+        "page_focus",
+        "page_notified",
+        "notify",
+        "set_unread_count",
+        "update_state",
+        "update_action",
+        "options",
+        "set_option",
+        "set_gpu",
+        "set_language",
+        "page_action",
+        "save_theme",
+        "icon_info_cmd",
+        "save_icon",
+        "save_icon_file",
+        "open_external",
+        "zoom",
+        "toggle_fullscreen",
+        "hide_window",
+        "quit_app",
+        "devtools",
+        "shell_state",
+        "shell_control",
+        "start_drag",
+        "start_resize",
+    ];
+    tauri_build::try_build(tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(&commands)))
+        .expect("tauri build");
 }
