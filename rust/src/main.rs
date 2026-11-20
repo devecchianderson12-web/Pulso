@@ -124,7 +124,11 @@ fn tray_icon(app: &AppHandle, count: u32) -> Image<'static> {
 
 fn icon_info(app: &AppHandle) -> Value {
     let icon = shared(app).settings.lock().unwrap().get("icon");
-    let mut info = if icon.is_object() { icon.clone() } else { json!({ "kind": "color" }) };
+    let mut info = if icon.is_object() {
+        icon.clone()
+    } else {
+        json!({ "kind": "color", "from": icons::DEFAULT_FROM, "to": icons::DEFAULT_TO, "angle": 135, "gradient": true })
+    };
     if icon.get("kind").and_then(Value::as_str) == Some("ico") {
         if let Ok(bytes) = std::fs::read(custom_ico_file(app)) {
             use base64::Engine;

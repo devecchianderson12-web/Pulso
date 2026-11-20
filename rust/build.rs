@@ -11,7 +11,7 @@ fn main() {
     println!("cargo:rerun-if-changed=src/shell-bridge.js");
     // WhatsApp Web is a remote page: Tauri only lets it call commands that are listed here and
     // granted in capabilities/default.json.
-    let commands = [
+    const COMMANDS: &[&str] = &[
         "page_focus",
         "page_notified",
         "notify",
@@ -38,6 +38,6 @@ fn main() {
         "start_drag",
         "start_resize",
     ];
-    tauri_build::try_build(tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(&commands)))
+    tauri_build::try_build(tauri_build::Attributes::new().app_manifest(tauri_build::AppManifest::new().commands(COMMANDS)))
         .expect("tauri build");
 }
