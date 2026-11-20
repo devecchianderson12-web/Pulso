@@ -50,6 +50,14 @@ día. Encima le añade integración con Windows y un diseño propio. No está af
 salvo que en WhatsApp hayas elegido el tema claro a mano (Ajustes → Chats → Tema → Predeterminado
 del sistema).
 
+## Pulso Rust
+
+También hay una versión escrita en **Rust** (Tauri + WebView2), en la carpeta `rust/`. Usa el motor web que ya trae
+Windows, así que pesa unos 10 MB en vez de ~100 MB y arranca más rápido. Tiene las mismas funciones y temas (el código que
+va dentro de WhatsApp Web, `src/page.js`, es compartido). Se descarga del mismo release: `Pulso-Setup-<versión>-rust.exe`
+(instalador) o `Pulso-Portable-<versión>-rust.exe` (portable). Las dos versiones pueden estar instaladas a la vez.
+GitHub Actions (`.github/workflows/rust.yml`) la compila y la adjunta al release en cada push a `main`.
+
 ## Desarrollo
 
 ```bash
