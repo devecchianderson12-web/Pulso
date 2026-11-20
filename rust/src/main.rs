@@ -17,7 +17,7 @@ use tauri::menu::{CheckMenuItem, MenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::webview::{DownloadEvent, WebviewBuilder};
 use tauri::window::WindowBuilder;
-use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, State, UserAttentionType, WebviewUrl, WindowEvent};
+use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, UserAttentionType, WebviewUrl, WindowEvent};
 
 const WHATSAPP_URL: &str = "https://web.whatsapp.com/";
 const TITLE_BAR_HEIGHT: f64 = 40.0;
@@ -46,8 +46,8 @@ pub struct Shared {
     pub pending: Mutex<Option<(String, String)>>,
 }
 
-fn shared(app: &AppHandle) -> State<'_, Shared> {
-    app.state::<Shared>()
+fn shared(app: &AppHandle) -> &Shared {
+    app.state::<Shared>().inner()
 }
 
 pub fn page_eval(app: &AppHandle, js: &str) {
@@ -763,7 +763,7 @@ fn start_drag(app: AppHandle) {
 
 #[tauri::command]
 fn start_resize(app: AppHandle, dir: String) {
-    use tauri::ResizeDirection as D;
+    use tauri::window::ResizeDirection as D;
     let d = match dir.as_str() {
         "North" => D::North,
         "South" => D::South,
