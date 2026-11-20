@@ -763,7 +763,7 @@ fn start_drag(app: AppHandle) {
 
 #[tauri::command]
 fn start_resize(app: AppHandle, dir: String) {
-    use tauri::window::ResizeDirection as D;
+    use tauri_runtime::ResizeDirection as D;
     let d = match dir.as_str() {
         "North" => D::North,
         "South" => D::South,
