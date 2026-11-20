@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The title bar and WhatsApp Web may call Pulso's own commands.",
+  "windows": ["main"],
+  "webviews": ["shell", "wa"],
+  "remote": {
+    "urls": ["https://web.whatsapp.com", "https://web.whatsapp.com/*"]
+  },
+  "permissions": ["core:default"]
+}

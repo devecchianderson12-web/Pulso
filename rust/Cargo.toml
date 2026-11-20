@@ -1,0 +1,29 @@
+[package]
+name = "pulso-rust"
+version = "2.13.3"
+description = "Pulso: tu WhatsApp, en tu estilo (versión en Rust)"
+license = "GPL-3.0-or-later"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["unstable", "tray-icon", "image-png", "image-ico", "devtools"] }
+tauri-plugin-single-instance = "2"
+tauri-winrt-notification = "0.7"
+serde_json = "1"
+ureq = { version = "2", features = ["json"] }
+png = "0.17"
+rfd = "0.15"
+open = "5"
+winreg = "0.55"
+base64 = "0.22"
+windows = { version = "0.61", features = ["Win32_UI_Shell"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

@@ -1,0 +1,66 @@
+# Builds Pulso Rust (the rust/ folder) and, on main, attaches its installer and portable .exe to
+# the release of the current version, next to the Electron files:
+#   Pulso-Setup-<version>-rust.exe and Pulso-Portable-<version>-rust.exe
+name: Pulso Rust
+
+on:
+  push:
+    branches: [main, rust]
+    paths: ['rust/**', 'src/page.js', 'src/shell.html', 'package.json', '.github/workflows/rust.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+
+      - name: Tauri CLI
+        run: npm install -g @tauri-apps/cli@2
+
+      - name: Title bar page
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force rust/dist | Out-Null
+          (Get-Content src/shell.html) | Where-Object { $_ -notmatch 'Content-Security-Policy' } | Set-Content rust/dist/shell.html -Encoding utf8
+
+      - name: Build
+        working-directory: rust
+        run: tauri build
+
+      - name: Name the files
+        shell: pwsh
+        run: |
+          $v = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          New-Item -ItemType Directory -Force out | Out-Null
+          Copy-Item (Get-ChildItem rust/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1).FullName "out/Pulso-Setup-$v-rust.exe"
+          Copy-Item rust/target/release/pulso-rust.exe "out/Pulso-Portable-$v-rust.exe"
+          "VERSION=$v" | Out-File -Append $env:GITHUB_ENV
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pulso-rust
+          path: out/*.exe
+
+      - name: Attach to the release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          # The Electron release of this version may still be uploading: wait for it.
+          for ($i = 0; $i -lt 40; $i++) {
+            gh release view "v$env:VERSION" -R ${{ github.repository }} *> $null
+            if ($LASTEXITCODE -eq 0) { break }
+            Start-Sleep 30
+          }
+          gh release upload "v$env:VERSION" out/*.exe --clobber -R ${{ github.repository }}
